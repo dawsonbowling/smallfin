@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmallFin</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ─── Loading screen ──────────────────────────────────── -->
+<div id="loading-screen" class="loading-screen">
+  <div class="spinner" style="width:32px;height:32px;border-width:3px"></div>
+  <span>Loading…</span>
+</div>
+
+<!-- ─── Login ───────────────────────────────────────────── -->
+<div id="view-login" class="hidden">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a1628 0%,#1e3260 100%)">
+    <div class="login-card">
+      <div class="login-logo">🏦</div>
+      <h1 id="login-bank-name">SmallFin</h1>
+      <p class="subtitle">Admin sign-in</p>
+
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email" required>
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" required>
+        </div>
+        <div id="login-error" class="login-error"></div>
+        <button type="submit" id="btn-login" class="btn btn-primary btn-full">Sign In</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ─── App Shell ────────────────────────────────────────── -->
+<div id="app-shell" class="hidden">
+
+  <!-- Top Nav -->
+  <nav class="top-nav">
+    <div class="nav-brand" onclick="navigateTo('dashboard')">
+      <div class="nav-brand-icon">🏦</div>
+      <span id="nav-bank-name">SmallFin</span>
+    </div>
+    <div class="nav-actions">
+      <button id="nav-btn-dashboard" class="nav-btn" onclick="navigateTo('dashboard')">Dashboard</button>
+      <button id="nav-btn-settings"  class="nav-btn" onclick="navigateTo('settings')">Settings</button>
+      <div class="nav-divider"></div>
+      <button class="nav-btn" onclick="handleLogout()">Sign Out</button>
+    </div>
+  </nav>
+
+  <!-- ─── Dashboard ──────────────────────────────────────── -->
+  <div id="view-dashboard" class="hidden">
+    <div class="page">
+
+      <div class="page-header">
+        <div>
+          <h2>Dashboard</h2>
+          <p class="subtitle">All investor accounts</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-ghost" id="btn-apply-interest" onclick="applyMonthlyInterest()">
+            ★ Apply Monthly Interest
+          </button>
+          <button class="btn btn-gold" onclick="openAddInvestorModal()">
+            + Add Investor
+          </button>
+        </div>
+      </div>
+
+      <!-- Rate banner -->
+      <div class="rate-banner">
+        <div class="rate-info">
+          <div class="rate-badge"><span id="current-rate-display">—</span> / mo</div>
+          <div class="rate-label">
+            <strong>Current Monthly Rate</strong>
+            Change anytime in Settings → applies going forward only
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats bar -->
+      <div class="stats-bar">
+        <div class="stat-card">
+          <div class="label">Investors</div>
+          <div class="value" id="stat-investor-count">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Total Deposited</div>
+          <div class="value" id="stat-total-deposited">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Total Interest Earned</div>
+          <div class="value green" id="stat-total-interest">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Total Balance</div>
+          <div class="value" id="stat-total-balance">—</div>
+        </div>
+      </div>
+
+      <!-- Investor grid -->
+      <div id="investor-grid" class="investor-grid"></div>
+
+    </div>
+  </div><!-- /view-dashboard -->
+
+  <!-- ─── Settings ───────────────────────────────────────── -->
+  <div id="view-settings" class="hidden">
+    <div class="page" style="max-width:600px">
+
+      <div class="page-header">
+        <div>
+          <h2>Settings</h2>
+          <p class="subtitle">Bank configuration</p>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <h3>Bank Identity</h3>
+          <p>The name that appears on all statements and screens.</p>
+        </div>
+        <div class="settings-body">
+          <div class="form-group">
+            <label for="setting-bank-name">Bank Name</label>
+            <input type="text" id="setting-bank-name" placeholder="SmallFin" maxlength="60">
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <h3>Monthly Rate of Return</h3>
+          <p>This rate applies to <strong>all</strong> investors. Changing it here takes effect for future interest applications only — past transactions are never altered.</p>
+        </div>
+        <div class="settings-body">
+          <div class="form-group">
+            <label for="setting-monthly-rate">Monthly Rate (%)</label>
+            <input type="number" id="setting-monthly-rate" placeholder="5" min="0" max="100" step="0.1">
+            <p class="form-hint">
+              Example: <strong>5</strong> = 5% per month. A $100 deposit earns $5 the first month,
+              then compounds on $105 the next month, etc.
+            </p>
+          </div>
+        </div>
+        <div class="settings-actions">
+          <button id="btn-save-settings" class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <h3>How Interest Works</h3>
+        </div>
+        <div class="settings-body" style="font-size:0.9rem;color:var(--muted);line-height:1.7">
+          <p>Interest is <strong>not</strong> applied automatically on a schedule. When you're ready
+          to credit a month's interest, click <strong>"Apply Monthly Interest"</strong> on the Dashboard.
+          It calculates each kid's current balance × the current rate and logs it as a transaction.</p>
+          <br>
+          <p>If you change the rate mid-month, it takes effect the next time you apply interest.
+          All prior interest transactions keep their original rate, visible in each investor's history.</p>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /view-settings -->
+
+</div><!-- /app-shell -->
+
+<!-- ─── Modal: Add Investor ──────────────────────────────── -->
+<div id="modal-add-investor" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Investor</h3>
+      <button class="btn-icon" onclick="closeAddInvestorModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="new-investor-name">Kid's Name</label>
+        <input type="text" id="new-investor-name" placeholder="e.g. Lily" maxlength="60"
+               onkeydown="if(event.key==='Enter') submitAddInvestor()">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeAddInvestorModal()">Cancel</button>
+      <button id="btn-add-investor-submit" class="btn btn-primary" onclick="submitAddInvestor()">Add Investor</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal: Log Deposit ───────────────────────────────── -->
+<div id="modal-deposit" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Log Deposit — <span id="deposit-investor-name"></span></h3>
+      <button class="btn-icon" onclick="closeDepositModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="deposit-amount">Amount ($)</label>
+        <input type="number" id="deposit-amount" placeholder="0.00" min="0.01" step="0.01">
+      </div>
+      <div class="form-group">
+        <label for="deposit-date">Date</label>
+        <input type="date" id="deposit-date">
+      </div>
+      <div class="form-group">
+        <label for="deposit-note">Note (optional)</label>
+        <input type="text" id="deposit-note" placeholder="e.g. Birthday money" maxlength="100">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeDepositModal()">Cancel</button>
+      <button id="btn-deposit-submit" class="btn btn-primary" onclick="submitDeposit()">Log Deposit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal: Transaction History ──────────────────────── -->
+<div id="modal-txn" class="modal-backdrop hidden">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-header">
+      <h3 id="txn-modal-title">Transactions</h3>
+      <button class="btn-icon" onclick="closeTxnModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="txn-modal-summary" style="margin-bottom:14px"></div>
+      <div id="txn-modal-list" class="txn-list"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeTxnModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Toast container ──────────────────────────────────── -->
+<div id="toast-container"></div>
+
+<!-- ─── Firebase (compat CDN) ────────────────────────────── -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
