@@ -3,31 +3,45 @@
 ## What We Built
 SmallFin is a compound interest investment tracker for kids. It lets you track investments, visualize growth over time, and teach kids about the power of compound interest.
 
-## Current State
+## Current State (v1.2)
 - App is fully built and deployed to GitHub Pages
-- Live at: https://dawsonbowling.github.io/smallfin
-- Custom domain **smallfin.app** has been purchased and DNS is configured — still propagating
+- Live at: **smallfin.app** (custom domain active, HTTPS in progress)
+- Version number displayed in the nav (v1.2)
 
 ## Firebase
 - Project ID: `smallfin-4dc4f`
 - Firebase Authentication: enabled
 - Firestore: enabled
-- Note: currently one shared database (no per-user data isolation) — all logged-in users see the same data
+- Shared database — all logged-in users see the same bank (by design for now)
 
-## Next Steps
-1. ✅ Verify `smallfin.app` DNS has resolved
-2. ✅ Add `smallfin.app` to Firebase authorized domains
-3. ⏳ Enable HTTPS for `smallfin.app` in GitHub Pages settings (in progress)
-4. ✅ Test the full app flow — working, brother-in-law tested shared bank
+## How Interest Works
+- Interest is computed on the fly from deposit history — nothing is stored in Firestore
+- Each month: prior balance × rate, plus prorated interest for mid-month deposits
+- Proration: `(daysInMonth - depositDay + 1) / daysInMonth × rate` (deposit day counts)
+- Interest for month M is dated the 1st of month M+1
+- Deleting a deposit instantly recalculates all interest
+
+## Completed Features
+- ✅ Dashboard with investor cards, stats bar, rate banner
+- ✅ Add/delete investors with emoji avatars (click avatar on card to change)
+- ✅ Log deposits with custom date and note
+- ✅ Delete individual deposits from transaction history
+- ✅ Automatic compound interest — computed from deposit dates, no manual step
+- ✅ Printable bank statement per investor (with projection)
+- ✅ Print tip: "uncheck Headers and Footers" shown near print button
+- ✅ Settings: bank name, monthly rate, bank logo (emoji picker)
+- ✅ Nav shows bank logo + name with "by SmallFin" subtitle
+- ✅ Version number in nav header (bumped with each deploy)
+- ✅ Cache-busting via ?v= query string on app.js
+
+## Setup & Deploy
+- GitHub Pages: push to `main` → auto-deploys in ~2 minutes
+- To release a new version: bump `VERSION` in `app.js` and `?v=X.X` in the `<script>` tag in `index.html`
 
 ## Future Ideas
 - Multi-user support: separate "banks" per family/group, with the ability to invite others
 - Each bank owned by a creator, shareable via invite code or email
-- ✅ Printable version shows tip to uncheck "Headers and Footers" (can't be done programmatically)
-- ✅ Interest banner auto-prompts on 1st of new month if interest hasn't been applied
-- Allow Manual return application per investor at specific date in past or future
-- Create Accounts
-- Create New Bank
-- Select Bank Logo from Selection
-- Select Avatar for Investor Photo from selection
-- Upper left has Inputted bank name with smaller "by SmallFin"
+- Allow manual return application per investor at a specific date (past or future)
+- Create Accounts / Create New Bank flow
+- Apply bank logo to login screen
+- Select Avatar for Investor Photo from a larger selection
