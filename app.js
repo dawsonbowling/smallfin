@@ -690,7 +690,7 @@ function printInvestor(investorId) {
     balance
   }));
 
-  window.open(`print.html?id=${investorId}`, "_blank");
+  window.location.href = `print.html?id=${investorId}`;
 }
 
 // ─── Login ─────────────────────────────────────────────────
