@@ -3,7 +3,7 @@
 ## What We Built
 SmallFin is a compound interest investment tracker for kids. It lets you track investments, visualize growth over time, and teach kids about the power of compound interest.
 
-## Current State (v1.2)
+## Current State (v1.3)
 - App is fully built and deployed to GitHub Pages
 - Live at: **smallfin.app** (custom domain active, HTTPS in progress)
 - Version number displayed in the nav (v1.2)
@@ -31,6 +31,7 @@ SmallFin is a compound interest investment tracker for kids. It lets you track i
 - ✅ Print tip: "uncheck Headers and Footers" shown near print button
 - ✅ Settings: bank name, monthly rate, bank logo (emoji picker)
 - ✅ Nav shows bank logo + name with "by SmallFin" subtitle
+- ✅ SmallFin logo (logo.png) on login screen
 - ✅ Version number in nav header (bumped with each deploy)
 - ✅ Cache-busting via ?v= query string on app.js
 
@@ -43,5 +44,5 @@ SmallFin is a compound interest investment tracker for kids. It lets you track i
 - Each bank owned by a creator, shareable via invite code or email
 - Allow manual return application per investor at a specific date (past or future)
 - Create Accounts / Create New Bank flow
-- Apply bank logo to login screen
+- ✅ SmallFin logo on login screen
 - Select Avatar for Investor Photo from a larger selection
