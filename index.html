@@ -19,20 +19,46 @@
   <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a1628 0%,#1e3260 100%)">
     <div class="login-card">
       <img src="logo.png" alt="SmallFin" class="login-logo">
-      <p class="subtitle">Admin sign-in</p>
 
-      <form id="login-form" onsubmit="handleLogin(event)">
-        <div class="form-group">
-          <label for="login-email">Email</label>
-          <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email" required>
-        </div>
-        <div class="form-group">
-          <label for="login-password">Password</label>
-          <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" required>
-        </div>
-        <div id="login-error" class="login-error"></div>
-        <button type="submit" id="btn-login" class="btn btn-primary btn-full">Sign In</button>
-      </form>
+      <!-- Sign In -->
+      <div id="form-login">
+        <p class="subtitle">Sign in to your bank</p>
+        <form onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email" required>
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" required>
+          </div>
+          <div id="login-error" class="login-error"></div>
+          <button type="submit" id="btn-login" class="btn btn-primary btn-full">Sign In</button>
+        </form>
+        <p class="login-switch">New to SmallFin? <a href="#" onclick="showSignupForm(event)">Create an account</a></p>
+      </div>
+
+      <!-- Create Account -->
+      <div id="form-signup" class="hidden">
+        <p class="subtitle">Create your bank</p>
+        <form onsubmit="handleSignup(event)">
+          <div class="form-group">
+            <label for="signup-name">Your Name</label>
+            <input type="text" id="signup-name" placeholder="e.g. Alex Smith" autocomplete="name" required>
+          </div>
+          <div class="form-group">
+            <label for="signup-email">Email</label>
+            <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email" required>
+          </div>
+          <div class="form-group">
+            <label for="signup-password">Password</label>
+            <input type="password" id="signup-password" placeholder="Min. 6 characters" autocomplete="new-password" required>
+          </div>
+          <div id="signup-error" class="login-error"></div>
+          <button type="submit" id="btn-signup" class="btn btn-primary btn-full">Create Account</button>
+        </form>
+        <p class="login-switch">Already have an account? <a href="#" onclick="showLoginForm(event)">Sign in</a></p>
+      </div>
     </div>
   </div>
 </div>
@@ -268,7 +294,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="app.js?v=1.3"></script>
+<script src="app.js?v=1.4"></script>
 
 </body>
 </html>

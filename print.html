@@ -214,11 +214,15 @@ async function loadStatement() {
   }
 
   try {
+    // All data scoped to the user's bank
+    const bankId = user.uid;
+    const bankRef = db.collection("banks").doc(bankId);
+
     // Parallel fetches
     const [invSnap, txnSnap, settingsSnap] = await Promise.all([
-      db.collection("investors").doc(investorId).get(),
-      db.collection("transactions").where("investorId", "==", investorId).orderBy("date", "asc").get(),
-      db.collection("config").doc("settings").get()
+      bankRef.collection("investors").doc(investorId).get(),
+      bankRef.collection("transactions").where("investorId", "==", investorId).orderBy("date", "asc").get(),
+      bankRef.get()
     ]);
 
     if (!invSnap.exists) {

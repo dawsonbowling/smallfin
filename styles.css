@@ -99,6 +99,15 @@ body {
 
 .login-card input:focus { border-color: var(--navy-light); }
 
+.login-switch {
+  margin-top: 18px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: center;
+}
+.login-switch a { color: var(--navy-light); text-decoration: none; font-weight: 600; }
+.login-switch a:hover { text-decoration: underline; }
+
 .login-error {
   color: var(--red);
   font-size: 0.85rem;
