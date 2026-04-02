@@ -52,15 +52,10 @@ body {
 }
 
 .login-logo {
-  width: 64px;
-  height: 64px;
-  background: linear-gradient(135deg, var(--navy), var(--navy-light));
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 20px;
-  font-size: 28px;
+  width: 200px;
+  height: auto;
+  display: block;
+  margin: 0 auto 16px;
 }
 
 .login-card h1 {
