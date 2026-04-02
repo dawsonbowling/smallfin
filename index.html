@@ -248,6 +248,19 @@
   </div>
 </div>
 
+<!-- ─── Modal: Change Avatar ─────────────────────────────────── -->
+<div id="modal-avatar" class="modal-backdrop hidden">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3>Change Avatar — <span id="avatar-modal-name"></span></h3>
+      <button class="btn-icon" onclick="closeAvatarModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="emoji-picker" id="avatar-picker"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ─── Toast container ──────────────────────────────────── -->
 <div id="toast-container"></div>
 
@@ -256,7 +269,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="app.js?v=1.1"></script>
+<script src="app.js?v=1.2"></script>
 
 </body>
 </html>

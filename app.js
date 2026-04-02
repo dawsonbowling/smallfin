@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "1.1";
+const VERSION = "1.2";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -299,7 +299,7 @@ function renderDashboard() {
     const card = el("div", "investor-card");
     card.innerHTML = `
       <div class="investor-card-header">
-        <div class="investor-avatar">${avatar}</div>
+        <div class="investor-avatar" onclick="openAvatarModal('${id}')" title="Change avatar" style="cursor:pointer">${avatar}</div>
         <span class="investor-name">${escHtml(inv.name)}</span>
         <button class="btn-icon" onclick="openTxnModal('${id}')" title="View transactions" style="color:rgba(255,255,255,0.6)">📋</button>
       </div>
@@ -505,6 +505,32 @@ async function deleteDepositTransaction(txnId, investorId) {
   }
 }
 
+// ─── Avatar Picker Modal ────────────────────────────────────
+function openAvatarModal(investorId) {
+  const inv = investors[investorId];
+  $("avatar-modal-name").textContent = inv?.name || "";
+  const picker = $("avatar-picker");
+  picker.innerHTML = INVESTOR_EMOJIS.map(e =>
+    `<button type="button" class="emoji-btn${e === (inv?.emoji || "") ? " selected" : ""}" data-emoji="${e}">${e}</button>`
+  ).join("");
+  picker.onclick = async ev => {
+    const btn = ev.target.closest(".emoji-btn");
+    if (!btn) return;
+    const emoji = btn.dataset.emoji;
+    picker.querySelectorAll(".emoji-btn").forEach(b => b.classList.toggle("selected", b === btn));
+    try {
+      await db.collection("investors").doc(investorId).update({ emoji });
+      closeAvatarModal();
+      toast("Avatar updated!", "success");
+    } catch (e) {
+      toast("Error: " + e.message, "error");
+    }
+  };
+  show("modal-avatar");
+}
+
+function closeAvatarModal() { hide("modal-avatar"); }
+
 // ─── Delete Investor ────────────────────────────────────────
 async function confirmDeleteInvestor(investorId) {
   const inv = investors[investorId];
@@ -610,6 +636,7 @@ document.addEventListener("keydown", e => {
     hide("modal-add-investor");
     hide("modal-deposit");
     hide("modal-txn");
+    hide("modal-avatar");
   }
 });
 
@@ -619,5 +646,6 @@ document.addEventListener("click", e => {
     hide("modal-add-investor");
     hide("modal-deposit");
     hide("modal-txn");
+    hide("modal-avatar");
   }
 });

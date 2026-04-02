@@ -596,8 +596,8 @@ body {
 }
 
 .emoji-btn {
-  background: var(--card);
-  border: 2px solid transparent;
+  background: var(--bg);
+  border: 2px solid var(--border);
   border-radius: 8px;
   padding: 4px 5px;
   font-size: 1.4rem;
@@ -606,8 +606,8 @@ body {
   transition: border-color 0.12s, background 0.12s;
 }
 
-.emoji-btn:hover { border-color: var(--navy-light); background: var(--bg); }
-.emoji-btn.selected { border-color: var(--gold); background: rgba(245,158,11,0.12); }
+.emoji-btn:hover { border-color: var(--navy-light); background: #e8edf5; }
+.emoji-btn.selected { border-color: var(--gold); background: rgba(245,158,11,0.15); }
 
 /* ─── Toast ────────────────────────────────────────────────── */
 #toast-container {
