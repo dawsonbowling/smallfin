@@ -249,8 +249,10 @@ function renderAll() {
 }
 
 function renderNavBrand() {
-  const el = $("nav-bank-name");
-  if (el) el.textContent = settings.bankName;
+  const nameEl = $("nav-bank-name");
+  if (nameEl) nameEl.textContent = settings.bankName;
+  const iconEl = $("nav-brand-icon");
+  if (iconEl) iconEl.textContent = settings.bankLogo || "🏦";
 }
 
 function renderDashboard() {
@@ -289,11 +291,11 @@ function renderDashboard() {
   ids.forEach(id => {
     const inv = investors[id];
     const { deposited, interest, balance } = calcBalance(id);
-    const initials = inv.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+    const avatar = inv.emoji || inv.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
     const card = el("div", "investor-card");
     card.innerHTML = `
       <div class="investor-card-header">
-        <div class="investor-avatar">${initials}</div>
+        <div class="investor-avatar">${avatar}</div>
         <span class="investor-name">${escHtml(inv.name)}</span>
         <button class="btn-icon" onclick="openTxnModal('${id}')" title="View transactions" style="color:rgba(255,255,255,0.6)">📋</button>
       </div>
@@ -327,6 +329,7 @@ function renderSettings() {
   const rateEl = $("setting-monthly-rate");
   if (nameEl) nameEl.value = settings.bankName;
   if (rateEl) rateEl.value = settings.monthlyRate;
+  renderEmojiPicker("bank-logo-picker", BANK_LOGOS, settings.bankLogo || "🏦", "setting-bank-logo");
 }
 
 function setInner(id, val) {
@@ -338,10 +341,31 @@ function escHtml(s) {
   return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
+// ─── Emoji pickers ──────────────────────────────────────────
+const INVESTOR_EMOJIS = ["😀","🦁","🐯","🦊","🐻","🐼","🦄","🐸","🦋","🚀","⭐","🏆","🎯","🌟","🔥","💎","🎸","⚽","🎨","🦅"];
+const BANK_LOGOS      = ["🏦","🐟","🐠","🐡","🦈","💰","💵","💎","🌊","⭐","🚀","🏆","🔑","🛡️"];
+
+function renderEmojiPicker(pickerId, emojis, selected, hiddenId) {
+  const picker = $(pickerId);
+  if (!picker) return;
+  picker.innerHTML = emojis.map(e =>
+    `<button type="button" class="emoji-btn${e === selected ? " selected" : ""}" data-emoji="${e}">${e}</button>`
+  ).join("");
+  if (hiddenId) $(hiddenId).value = selected;
+  picker.onclick = ev => {
+    const btn = ev.target.closest(".emoji-btn");
+    if (!btn) return;
+    if (hiddenId) $(hiddenId).value = btn.dataset.emoji;
+    picker.querySelectorAll(".emoji-btn").forEach(b => b.classList.toggle("selected", b === btn));
+  };
+}
+
 // ─── Add Investor Modal ─────────────────────────────────────
 function openAddInvestorModal() {
   $("modal-add-investor").classList.remove("hidden");
   $("new-investor-name").value = "";
+  const defaultEmoji = INVESTOR_EMOJIS[Math.floor(Math.random() * INVESTOR_EMOJIS.length)];
+  renderEmojiPicker("investor-emoji-picker", INVESTOR_EMOJIS, defaultEmoji, "new-investor-emoji");
   setTimeout(() => $("new-investor-name").focus(), 50);
 }
 
@@ -358,6 +382,7 @@ async function submitAddInvestor() {
   try {
     await db.collection("investors").add({
       name,
+      emoji:     $("new-investor-emoji").value || "😀",
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     closeAddInvestorModal();
@@ -515,8 +540,9 @@ async function saveSettings() {
     await db.collection("config").doc("settings").set({
       bankName,
       monthlyRate: rateRaw,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedBy: currentUser.uid
+      bankLogo:   $("setting-bank-logo").value || "🏦",
+      updatedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy:  currentUser.uid
     }, { merge: true });
     toast("Settings saved!", "success");
   } catch (e) {

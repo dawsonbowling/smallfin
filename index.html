@@ -44,8 +44,11 @@
   <!-- Top Nav -->
   <nav class="top-nav">
     <div class="nav-brand" onclick="navigateTo('dashboard')">
-      <div class="nav-brand-icon">🏦</div>
-      <span id="nav-bank-name">SmallFin</span>
+      <div class="nav-brand-icon" id="nav-brand-icon">🏦</div>
+      <div>
+        <div class="nav-bank-label" id="nav-bank-name">SmallFin</div>
+        <div class="nav-by-smallfin">by SmallFin</div>
+      </div>
     </div>
     <div class="nav-actions">
       <button id="nav-btn-dashboard" class="nav-btn" onclick="navigateTo('dashboard')">Dashboard</button>
@@ -129,6 +132,11 @@
             <label for="setting-bank-name">Bank Name</label>
             <input type="text" id="setting-bank-name" placeholder="SmallFin" maxlength="60">
           </div>
+          <div class="form-group">
+            <label>Bank Logo</label>
+            <div class="emoji-picker" id="bank-logo-picker"></div>
+            <input type="hidden" id="setting-bank-logo" value="🏦">
+          </div>
         </div>
       </div>
 
@@ -180,6 +188,11 @@
         <label for="new-investor-name">Kid's Name</label>
         <input type="text" id="new-investor-name" placeholder="e.g. Lily" maxlength="60"
                onkeydown="if(event.key==='Enter') submitAddInvestor()">
+      </div>
+      <div class="form-group">
+        <label>Avatar</label>
+        <div class="emoji-picker" id="investor-emoji-picker"></div>
+        <input type="hidden" id="new-investor-emoji">
       </div>
     </div>
     <div class="modal-footer">

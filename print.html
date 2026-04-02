@@ -40,7 +40,7 @@
         <div class="stmt-label" style="margin-top:8px">Account Type</div>
         <div class="stmt-value">Compound Growth</div>
       </div>
-      <div class="stmt-logo-icon">🏦</div>
+      <div class="stmt-logo-icon" id="stmt-logo-icon">🏦</div>
     </div>
   </div>
 
@@ -255,6 +255,7 @@ async function loadStatement() {
     const now       = new Date();
     const stmtDate  = now.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
     const initials  = investor.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+    const avatar    = investor.emoji || initials;
 
     // Projection: months remaining in current year
     const endOfYear    = new Date(now.getFullYear(), 11, 31);
@@ -268,9 +269,10 @@ async function loadStatement() {
 
     set("stmt-bank-name",      settings.bankName);
     set("stmt-footer-bank",    settings.bankName);
+    set("stmt-logo-icon",      settings.bankLogo || "🏦");
     set("stmt-date",           stmtDate);
     set("stmt-generated-date", stmtDate);
-    set("stmt-avatar",         initials);
+    set("stmt-avatar",         avatar);
     set("stmt-investor-name",  investor.name);
     set("stmt-period",         `All transactions through ${stmtDate}`);
     set("stmt-balance",        fmt(balance));
