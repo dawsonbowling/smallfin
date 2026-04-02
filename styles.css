@@ -197,6 +197,7 @@ body {
 
 .nav-bank-label { font-weight: 700; font-size: 1.05rem; line-height: 1.2; }
 .nav-by-smallfin { font-size: 0.65rem; font-weight: 400; opacity: 0.45; line-height: 1; }
+.nav-version { font-size: 0.7rem; opacity: 0.35; font-weight: 400; letter-spacing: 0.03em; }
 
 .nav-brand-icon {
   width: 32px;

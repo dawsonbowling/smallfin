@@ -3,6 +3,8 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
+const VERSION = "1.1";
+
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
@@ -253,6 +255,8 @@ function renderNavBrand() {
   if (nameEl) nameEl.textContent = settings.bankName;
   const iconEl = $("nav-brand-icon");
   if (iconEl) iconEl.textContent = settings.bankLogo || "🏦";
+  const verEl = $("nav-version");
+  if (verEl) verEl.textContent = `v${VERSION}`;
 }
 
 function renderDashboard() {
