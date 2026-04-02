@@ -121,6 +121,8 @@
 firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
 const db   = firebase.firestore();
+db.enablePersistence({ synchronizeTabs: true })
+  .catch(err => console.warn("Firestore persistence:", err.code));
 
 // ─── Computed interest (mirrors app.js logic) ─────────────
 function computeInterestTransactions(deposits, monthlyRate) {

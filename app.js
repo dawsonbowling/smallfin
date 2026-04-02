@@ -3,12 +3,14 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "1.4";
+const VERSION = "1.5";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
 const db   = firebase.firestore();
+db.enablePersistence({ synchronizeTabs: true })
+  .catch(err => console.warn("Firestore persistence:", err.code));
 
 // ─── State ─────────────────────────────────────────────────
 let currentUser   = null;
