@@ -201,12 +201,12 @@ auth.onAuthStateChanged(user => {
     $("print-status").textContent = "Not signed in — redirecting…";
     setTimeout(() => { window.location.href = "index.html"; }, 1500);
   } else {
-    loadStatement();
+    loadStatement(user);
   }
 });
 
 // ─── Load & render ────────────────────────────────────────
-async function loadStatement() {
+async function loadStatement(user) {
   const params     = new URLSearchParams(window.location.search);
   const investorId = params.get("id");
 
