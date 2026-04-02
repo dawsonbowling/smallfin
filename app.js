@@ -17,6 +17,9 @@ let transactions  = {};   // investorId → [txn, ...]
 // Active Firestore listeners — stored so we can detach on logout
 const listeners = [];
 
+// Prevent re-showing the interest banner after dismiss within a session
+let interestBannerDismissed = false;
+
 // ─── DOM helpers ───────────────────────────────────────────
 const $  = id => document.getElementById(id);
 const el = (tag, cls, html) => {
@@ -106,8 +109,10 @@ function showApp() {
 function detachListeners() {
   listeners.forEach(unsub => unsub());
   listeners.length = 0;
-  investors    = {};
-  transactions = {};
+  investors             = {};
+  transactions          = {};
+  interestBannerDismissed = false;
+  hide("interest-banner");
 }
 
 // ─── Firestore listeners ────────────────────────────────────
@@ -166,6 +171,24 @@ function navigateTo(view) {
   renderAll();
 }
 
+// ─── Interest Banner ───────────────────────────────────────
+function checkAutoInterest() {
+  if (interestBannerDismissed) return;
+  if (Object.keys(investors).length === 0) { hide("interest-banner"); return; }
+  const d = new Date();
+  const current = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  if ((settings.lastInterestYearMonth || "") < current) {
+    show("interest-banner");
+  } else {
+    hide("interest-banner");
+  }
+}
+
+function dismissInterestBanner() {
+  interestBannerDismissed = true;
+  hide("interest-banner");
+}
+
 // ─── Render ────────────────────────────────────────────────
 function renderAll() {
   if (currentView === "dashboard") renderDashboard();
@@ -179,6 +202,8 @@ function renderNavBrand() {
 }
 
 function renderDashboard() {
+  checkAutoInterest();
+
   // Rate banner
   const rateEl = $("current-rate-display");
   if (rateEl) rateEl.textContent = `${settings.monthlyRate}%`;
@@ -376,6 +401,14 @@ async function applyMonthlyInterest() {
       });
     });
     await batch.commit();
+    const d = new Date();
+    const currentYearMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    await db.collection("config").doc("settings").set(
+      { lastInterestYearMonth: currentYearMonth },
+      { merge: true }
+    );
+    interestBannerDismissed = true;
+    hide("interest-banner");
     toast("Monthly interest applied!", "success");
   } catch (e) {
     toast("Error applying interest: " + e.message, "error");

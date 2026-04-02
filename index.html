@@ -105,6 +105,18 @@
         </div>
       </div>
 
+      <!-- Interest due banner (shown when current month's interest hasn't been applied) -->
+      <div id="interest-banner" class="interest-banner hidden">
+        <div>
+          <strong>Monthly interest hasn't been applied yet.</strong>
+          <span class="interest-banner-sub">Credit this month's growth to all investors.</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-gold" onclick="applyMonthlyInterest()">Apply Now</button>
+          <button class="btn-icon" onclick="dismissInterestBanner()" title="Dismiss" style="color:rgba(255,255,255,0.5)">✕</button>
+        </div>
+      </div>
+
       <!-- Investor grid -->
       <div id="investor-grid" class="investor-grid"></div>
 
