@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "1.5";
+const VERSION = "1.6";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -671,6 +671,25 @@ async function saveSettings() {
 
 // ─── Print ─────────────────────────────────────────────────
 function printInvestor(investorId) {
+  const inv    = investors[investorId];
+  const txns   = txnsWithRunningBalance(investorId);
+  const { deposited, interest, balance } = calcBalance(investorId);
+
+  // Serialize Firestore Timestamps to ISO strings for sessionStorage
+  const serializedTxns = txns.map(t => ({
+    ...t,
+    date: (t.date?.toDate ? t.date.toDate() : new Date(t.date)).toISOString()
+  }));
+
+  sessionStorage.setItem("sf_print_data", JSON.stringify({
+    investor: { id: inv.id, name: inv.name, emoji: inv.emoji },
+    settings: { ...settings },
+    txns:     serializedTxns,
+    deposited,
+    interest,
+    balance
+  }));
+
   window.open(`print.html?id=${investorId}`, "_blank");
 }
 

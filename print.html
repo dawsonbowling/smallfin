@@ -49,7 +49,7 @@
   <div class="stmt-investor-hero">
     <div class="stmt-investor-avatar" id="stmt-avatar">—</div>
     <div>
-      <div class="stmt-investor-name" id="stmt-investor-name">Loading…</div>
+      <div class="stmt-investor-name" id="stmt-investor-name">—</div>
       <div class="stmt-period" id="stmt-period">Statement through today</div>
     </div>
     <div class="stmt-balance-hero">
@@ -87,7 +87,7 @@
       </tr>
     </thead>
     <tbody id="stmt-tbody">
-      <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">Loading…</td></tr>
+      <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">—</td></tr>
     </tbody>
   </table>
 
@@ -112,210 +112,74 @@
 
 </div><!-- /print-page -->
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js"></script>
 <script>
-// ─── Init Firebase ────────────────────────────────────────
-firebase.initializeApp(FIREBASE_CONFIG);
-const auth = firebase.auth();
-const db   = firebase.firestore();
-db.enablePersistence({ synchronizeTabs: true })
-  .catch(err => console.warn("Firestore persistence:", err.code));
-
-// ─── Computed interest (mirrors app.js logic) ─────────────
-function computeInterestTransactions(deposits, monthlyRate) {
-  if (!deposits || deposits.length === 0) return [];
-  const rate = monthlyRate / 100;
-  const today = new Date();
-  const currentYear  = today.getFullYear();
-  const currentMonth = today.getMonth();
-
-  const sorted = deposits.slice().sort((a, b) => {
-    const da = a.date?.toDate ? a.date.toDate() : new Date(a.date);
-    const db_ = b.date?.toDate ? b.date.toDate() : new Date(b.date);
-    return da - db_;
-  });
-
-  const firstDate = sorted[0].date?.toDate ? sorted[0].date.toDate() : new Date(sorted[0].date);
-  let year  = firstDate.getFullYear();
-  let month = firstDate.getMonth();
-
-  const result = [];
-  let runningBalance = 0;
-
-  while (year < currentYear || (year === currentYear && month < currentMonth)) {
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const depositsThisMonth = sorted.filter(d => {
-      const dd = d.date?.toDate ? d.date.toDate() : new Date(d.date);
-      return dd.getFullYear() === year && dd.getMonth() === month;
-    });
-
-    let interest = runningBalance * rate;
-    depositsThisMonth.forEach(d => {
-      const dd = d.date?.toDate ? d.date.toDate() : new Date(d.date);
-      const daysEarning = daysInMonth - dd.getDate() + 1;
-      interest += d.amount * (daysEarning / daysInMonth) * rate;
-      runningBalance += d.amount;
-    });
-
-    interest = parseFloat(interest.toFixed(2));
-    if (interest > 0) {
-      const monthLabel = new Date(year, month).toLocaleString("en-US", { month: "long", year: "numeric" });
-      result.push({
-        type:   "interest",
-        amount: interest,
-        date:   new Date(year, month + 1, 1),
-        note:   `Monthly interest @ ${monthlyRate}% — ${monthLabel}`
-      });
-    }
-
-    runningBalance += interest;
-    month++;
-    if (month > 11) { month = 0; year++; }
-  }
-
-  return result;
-}
-
-// ─── Helpers ─────────────────────────────────────────────
 function fmt(n) {
   return new Intl.NumberFormat("en-US", {
     style: "currency", currency: "USD", minimumFractionDigits: 2
   }).format(n ?? 0);
 }
 
-function fmtDate(ts) {
-  if (!ts) return "—";
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+function fmtDate(iso) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function $(id) { return document.getElementById(id); }
 function set(id, val) { const e = $(id); if (e) e.textContent = val; }
 
-// ─── Auth guard ───────────────────────────────────────────
-auth.onAuthStateChanged(user => {
-  if (!user) {
-    $("print-status").textContent = "Not signed in — redirecting…";
-    setTimeout(() => { window.location.href = "index.html"; }, 1500);
-  } else {
-    loadStatement(user);
-  }
-});
-
-// ─── Load & render ────────────────────────────────────────
-async function loadStatement(user) {
-  const params     = new URLSearchParams(window.location.search);
-  const investorId = params.get("id");
-
-  if (!investorId) {
-    $("print-status").textContent = "No investor specified.";
-    return;
-  }
-
-  try {
-    // All data scoped to the user's bank
-    const bankId = user.uid;
-    const bankRef = db.collection("banks").doc(bankId);
-
-    // Parallel fetches
-    const [invSnap, txnSnap, settingsSnap] = await Promise.all([
-      bankRef.collection("investors").doc(investorId).get(),
-      bankRef.collection("transactions").where("investorId", "==", investorId).orderBy("date", "asc").get(),
-      bankRef.get()
-    ]);
-
-    if (!invSnap.exists) {
-      $("print-status").textContent = "Investor not found.";
-      return;
-    }
-
-    const investor = { id: invSnap.id, ...invSnap.data() };
-    const settings = settingsSnap.exists
-      ? { bankName: "SmallFin", monthlyRate: 5, ...settingsSnap.data() }
-      : { bankName: "SmallFin", monthlyRate: 5 };
-
-    // Build transactions with running balance (interest computed, not from Firestore)
-    const deposits       = txnSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(t => t.type === "deposit");
-    const interestEntries = computeInterestTransactions(deposits, settings.monthlyRate);
-
-    const all = [...deposits, ...interestEntries].sort((a, b) => {
-      const da = a.date?.toDate ? a.date.toDate() : new Date(a.date);
-      const db_ = b.date?.toDate ? b.date.toDate() : new Date(b.date);
-      return da - db_;
-    });
-
-    let running = 0;
-    const txns = all.map(t => {
-      running += t.amount;
-      return { ...t, runningBalance: running };
-    });
-
-    const deposited = deposits.reduce((s, t) => s + t.amount, 0);
-    const interest  = interestEntries.reduce((s, t) => s + t.amount, 0);
-    const balance   = deposited + interest;
-
-    // Dates
-    const now       = new Date();
-    const stmtDate  = now.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-    const initials  = investor.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-    const avatar    = investor.emoji || initials;
-
-    // Projection: months remaining in current year
-    const endOfYear    = new Date(now.getFullYear(), 11, 31);
-    const msPerMonth   = 1000 * 60 * 60 * 24 * 30.44;
-    const monthsLeft   = Math.max(0, Math.round((endOfYear - now) / msPerMonth));
-    const rate         = settings.monthlyRate / 100;
-    const projected    = balance * Math.pow(1 + rate, monthsLeft);
-
-    // ─── Render ───────────────────────────────────────────
-    document.title = `${investor.name} — Bank Statement`;
-
-    set("stmt-bank-name",      settings.bankName);
-    set("stmt-footer-bank",    settings.bankName);
-    set("stmt-logo-icon",      settings.bankLogo || "🏦");
-    set("stmt-date",           stmtDate);
-    set("stmt-generated-date", stmtDate);
-    set("stmt-avatar",         avatar);
-    set("stmt-investor-name",  investor.name);
-    set("stmt-period",         `All transactions through ${stmtDate}`);
-    set("stmt-balance",        fmt(balance));
-    set("stmt-balance-2",      fmt(balance));
-    set("stmt-deposited",      fmt(deposited));
-    set("stmt-interest",       fmt(interest));
-    set("proj-rate",           `${settings.monthlyRate}%`);
-    set("proj-year",           String(now.getFullYear()));
-    set("proj-months",         String(monthsLeft));
-    set("proj-amount",         fmt(projected));
-
-    // Transaction table
-    const tbody = $("stmt-tbody");
-    if (txns.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">No transactions yet.</td></tr>`;
-    } else {
-      tbody.innerHTML = txns.map(t => `
-        <tr>
-          <td>${fmtDate(t.date)}</td>
-          <td>${escHtml(t.note || (t.type === "deposit" ? "Deposit" : `Interest @ ${t.appliedRate ?? settings.monthlyRate}%`))}</td>
-          <td><span class="txn-type-badge ${t.type}">${t.type === "deposit" ? "Deposit" : "Interest"}</span></td>
-          <td class="amount-${t.type}">+${fmt(t.amount)}</td>
-          <td class="running-balance">${fmt(t.runningBalance)}</td>
-        </tr>`).join("");
-    }
-
-    $("print-status").textContent = "";
-
-  } catch (err) {
-    $("print-status").textContent = "Error loading data: " + err.message;
-    console.error(err);
-  }
-}
-
 function escHtml(s) {
   return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+const raw = sessionStorage.getItem("sf_print_data");
+if (!raw) {
+  $("print-status").textContent = "No data — please open this from the dashboard.";
+} else {
+  const { investor, settings, txns, deposited, interest, balance } = JSON.parse(raw);
+
+  const now      = new Date();
+  const stmtDate = now.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  const initials = investor.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+  const avatar   = investor.emoji || initials;
+
+  // Projection: months remaining in current year
+  const endOfYear  = new Date(now.getFullYear(), 11, 31);
+  const msPerMonth = 1000 * 60 * 60 * 24 * 30.44;
+  const monthsLeft = Math.max(0, Math.round((endOfYear - now) / msPerMonth));
+  const projected  = balance * Math.pow(1 + settings.monthlyRate / 100, monthsLeft);
+
+  document.title = `${investor.name} — Bank Statement`;
+
+  set("stmt-bank-name",      settings.bankName);
+  set("stmt-footer-bank",    settings.bankName);
+  set("stmt-logo-icon",      settings.bankLogo || "🏦");
+  set("stmt-date",           stmtDate);
+  set("stmt-generated-date", stmtDate);
+  set("stmt-avatar",         avatar);
+  set("stmt-investor-name",  investor.name);
+  set("stmt-period",         `All transactions through ${stmtDate}`);
+  set("stmt-balance",        fmt(balance));
+  set("stmt-balance-2",      fmt(balance));
+  set("stmt-deposited",      fmt(deposited));
+  set("stmt-interest",       fmt(interest));
+  set("proj-rate",           `${settings.monthlyRate}%`);
+  set("proj-year",           String(now.getFullYear()));
+  set("proj-months",         String(monthsLeft));
+  set("proj-amount",         fmt(projected));
+
+  const tbody = $("stmt-tbody");
+  if (!txns || txns.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">No transactions yet.</td></tr>`;
+  } else {
+    tbody.innerHTML = txns.map(t => `
+      <tr>
+        <td>${fmtDate(t.date)}</td>
+        <td>${escHtml(t.note || (t.type === "deposit" ? "Deposit" : `Interest @ ${settings.monthlyRate}%`))}</td>
+        <td><span class="txn-type-badge ${t.type}">${t.type === "deposit" ? "Deposit" : "Interest"}</span></td>
+        <td class="amount-${t.type}">+${fmt(t.amount)}</td>
+        <td class="running-balance">${fmt(t.runningBalance)}</td>
+      </tr>`).join("");
+  }
 }
 </script>
 </body>
