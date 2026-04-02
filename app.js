@@ -380,10 +380,15 @@ function renderNavBrand() {
   const iconEl = $("nav-brand-icon");
   const verEl  = $("nav-version");
 
+  const textEl = $("nav-brand-text");
   if (nameEl) nameEl.textContent = currentBankId ? settings.bankName : "SmallFin";
-  if (iconEl) iconEl.innerHTML   = currentBankId
-    ? (settings.bankLogo || "🏦")
-    : `<img src="smallfin-logo.png" alt="SmallFin" style="height:44px;width:auto;display:block">`;
+  if (textEl) toggle("nav-brand-text", !!currentBankId);
+  if (iconEl) {
+    iconEl.innerHTML = currentBankId
+      ? (settings.bankLogo || "🏦")
+      : `<img src="smallfin-logo.png" alt="SmallFin" style="height:44px;width:auto;display:block">`;
+    iconEl.classList.toggle("nav-brand-icon--logo", !currentBankId);
+  }
   if (verEl)  verEl.textContent  = `v${VERSION}`;
 }
 

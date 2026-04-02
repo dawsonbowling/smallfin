@@ -211,6 +211,12 @@ body {
   line-height: 1;
 }
 
+.nav-brand-icon--logo {
+  background: #fff;
+  border-radius: 12px;
+  padding: 6px 10px;
+}
+
 .nav-actions { display: flex; align-items: center; gap: 4px; }
 
 .nav-btn {
