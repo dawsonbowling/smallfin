@@ -122,6 +122,61 @@ firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
+// ─── Computed interest (mirrors app.js logic) ─────────────
+function computeInterestTransactions(deposits, monthlyRate) {
+  if (!deposits || deposits.length === 0) return [];
+  const rate = monthlyRate / 100;
+  const today = new Date();
+  const currentYear  = today.getFullYear();
+  const currentMonth = today.getMonth();
+
+  const sorted = deposits.slice().sort((a, b) => {
+    const da = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+    const db_ = b.date?.toDate ? b.date.toDate() : new Date(b.date);
+    return da - db_;
+  });
+
+  const firstDate = sorted[0].date?.toDate ? sorted[0].date.toDate() : new Date(sorted[0].date);
+  let year  = firstDate.getFullYear();
+  let month = firstDate.getMonth();
+
+  const result = [];
+  let runningBalance = 0;
+
+  while (year < currentYear || (year === currentYear && month < currentMonth)) {
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const depositsThisMonth = sorted.filter(d => {
+      const dd = d.date?.toDate ? d.date.toDate() : new Date(d.date);
+      return dd.getFullYear() === year && dd.getMonth() === month;
+    });
+
+    let interest = runningBalance * rate;
+    depositsThisMonth.forEach(d => {
+      const dd = d.date?.toDate ? d.date.toDate() : new Date(d.date);
+      const daysEarning = daysInMonth - dd.getDate();
+      interest += d.amount * (daysEarning / daysInMonth) * rate;
+      runningBalance += d.amount;
+    });
+
+    interest = parseFloat(interest.toFixed(2));
+    if (interest > 0) {
+      const monthLabel = new Date(year, month).toLocaleString("en-US", { month: "long", year: "numeric" });
+      result.push({
+        type:   "interest",
+        amount: interest,
+        date:   new Date(year, month + 1, 1),
+        note:   `Monthly interest @ ${monthlyRate}% — ${monthLabel}`
+      });
+    }
+
+    runningBalance += interest;
+    month++;
+    if (month > 11) { month = 0; year++; }
+  }
+
+  return result;
+}
+
 // ─── Helpers ─────────────────────────────────────────────
 function fmt(n) {
   return new Intl.NumberFormat("en-US", {
@@ -176,16 +231,24 @@ async function loadStatement() {
       ? { bankName: "SmallFin", monthlyRate: 5, ...settingsSnap.data() }
       : { bankName: "SmallFin", monthlyRate: 5 };
 
-    // Build transactions with running balance
+    // Build transactions with running balance (interest computed, not from Firestore)
+    const deposits       = txnSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(t => t.type === "deposit");
+    const interestEntries = computeInterestTransactions(deposits, settings.monthlyRate);
+
+    const all = [...deposits, ...interestEntries].sort((a, b) => {
+      const da = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+      const db_ = b.date?.toDate ? b.date.toDate() : new Date(b.date);
+      return da - db_;
+    });
+
     let running = 0;
-    const txns = txnSnap.docs.map(doc => {
-      const t = { id: doc.id, ...doc.data() };
+    const txns = all.map(t => {
       running += t.amount;
       return { ...t, runningBalance: running };
     });
 
-    const deposited = txns.filter(t => t.type === "deposit").reduce((s, t) => s + t.amount, 0);
-    const interest  = txns.filter(t => t.type === "interest").reduce((s, t) => s + t.amount, 0);
+    const deposited = deposits.reduce((s, t) => s + t.amount, 0);
+    const interest  = interestEntries.reduce((s, t) => s + t.amount, 0);
     const balance   = deposited + interest;
 
     // Dates

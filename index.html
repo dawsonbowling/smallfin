@@ -65,9 +65,6 @@
           <p class="subtitle">All investor accounts</p>
         </div>
         <div class="header-actions">
-          <button class="btn btn-ghost" id="btn-apply-interest" onclick="applyMonthlyInterest()">
-            ★ Apply Monthly Interest
-          </button>
           <button class="btn btn-gold" onclick="openAddInvestorModal()">
             + Add Investor
           </button>
@@ -102,18 +99,6 @@
         <div class="stat-card">
           <div class="label">Total Balance</div>
           <div class="value" id="stat-total-balance">—</div>
-        </div>
-      </div>
-
-      <!-- Interest due banner (shown when current month's interest hasn't been applied) -->
-      <div id="interest-banner" class="interest-banner hidden">
-        <div>
-          <strong>Monthly interest hasn't been applied yet.</strong>
-          <span class="interest-banner-sub">Credit this month's growth to all investors.</span>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button class="btn btn-gold" onclick="applyMonthlyInterest()">Apply Now</button>
-          <button class="btn-icon" onclick="dismissInterestBanner()" title="Dismiss" style="color:rgba(255,255,255,0.5)">✕</button>
         </div>
       </div>
 
@@ -172,12 +157,9 @@
           <h3>How Interest Works</h3>
         </div>
         <div class="settings-body" style="font-size:0.9rem;color:var(--muted);line-height:1.7">
-          <p>Interest is <strong>not</strong> applied automatically on a schedule. When you're ready
-          to credit a month's interest, click <strong>"Apply Monthly Interest"</strong> on the Dashboard.
-          It calculates each kid's current balance × the current rate and logs it as a transaction.</p>
+          <p>Interest is applied <strong>automatically</strong> on the 1st of each month based on each investor's deposit history. Deposits made mid-month are prorated by day — e.g. a deposit on the 15th of a 30-day month earns 15/30 of that month's interest.</p>
           <br>
-          <p>If you change the rate mid-month, it takes effect the next time you apply interest.
-          All prior interest transactions keep their original rate, visible in each investor's history.</p>
+          <p>Changing the rate here applies to all future calculations. You can delete individual deposits from each investor's transaction history and interest will recalculate instantly.</p>
         </div>
       </div>
 

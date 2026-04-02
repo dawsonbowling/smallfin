@@ -17,9 +17,6 @@ let transactions  = {};   // investorId → [txn, ...]
 // Active Firestore listeners — stored so we can detach on logout
 const listeners = [];
 
-// Prevent re-showing the interest banner after dismiss within a session
-let interestBannerDismissed = false;
-
 // ─── DOM helpers ───────────────────────────────────────────
 const $  = id => document.getElementById(id);
 const el = (tag, cls, html) => {
@@ -54,28 +51,89 @@ function fmtDate(ts) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-// ─── Balance calculator ─────────────────────────────────────
-function calcBalance(investorId) {
-  const txns = transactions[investorId] || [];
-  let deposited = 0, interest = 0;
-  txns.forEach(t => {
-    if (t.type === "deposit")  deposited += t.amount;
-    if (t.type === "interest") interest  += t.amount;
+// ─── Interest computation ────────────────────────────────────
+// Interest is never stored — always derived from deposit history.
+// Each month: priorBalance × rate, plus prorated interest for
+// deposits made mid-month: amount × (daysInMonth - depositDay) / daysInMonth × rate.
+// Interest for month M is dated the 1st of month M+1.
+function computeInterestTransactions(deposits, monthlyRate) {
+  if (!deposits || deposits.length === 0) return [];
+  const rate = monthlyRate / 100;
+  const today = new Date();
+  const currentYear  = today.getFullYear();
+  const currentMonth = today.getMonth(); // 0-indexed
+
+  const sorted = deposits.slice().sort((a, b) => {
+    const da = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+    const db_ = b.date?.toDate ? b.date.toDate() : new Date(b.date);
+    return da - db_;
   });
-  return { deposited, interest, balance: deposited + interest };
+
+  const firstDate = sorted[0].date?.toDate ? sorted[0].date.toDate() : new Date(sorted[0].date);
+  let year  = firstDate.getFullYear();
+  let month = firstDate.getMonth(); // 0-indexed
+
+  const result = [];
+  let runningBalance = 0;
+
+  while (year < currentYear || (year === currentYear && month < currentMonth)) {
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const depositsThisMonth = sorted.filter(d => {
+      const dd = d.date?.toDate ? d.date.toDate() : new Date(d.date);
+      return dd.getFullYear() === year && dd.getMonth() === month;
+    });
+
+    let interest = runningBalance * rate;
+    depositsThisMonth.forEach(d => {
+      const dd = d.date?.toDate ? d.date.toDate() : new Date(d.date);
+      const daysEarning = daysInMonth - dd.getDate();
+      interest += d.amount * (daysEarning / daysInMonth) * rate;
+      runningBalance += d.amount;
+    });
+
+    interest = parseFloat(interest.toFixed(2));
+    if (interest > 0) {
+      const monthLabel = new Date(year, month).toLocaleString("en-US", { month: "long", year: "numeric" });
+      result.push({
+        type:     "interest",
+        amount:   interest,
+        date:     new Date(year, month + 1, 1),
+        note:     `Monthly interest @ ${monthlyRate}% — ${monthLabel}`,
+        computed: true
+      });
+    }
+
+    runningBalance += interest;
+    month++;
+    if (month > 11) { month = 0; year++; }
+  }
+
+  return result;
 }
 
-// Running balance for statement view
+// ─── Balance calculator ─────────────────────────────────────
+function calcBalance(investorId) {
+  const deposits  = transactions[investorId] || [];
+  const interest  = computeInterestTransactions(deposits, settings.monthlyRate);
+  const deposited = deposits.reduce((s, t) => s + t.amount, 0);
+  const earned    = interest.reduce((s, t) => s + t.amount, 0);
+  return { deposited, interest: earned, balance: deposited + earned };
+}
+
+// Running balance for statement / transaction modal
 function txnsWithRunningBalance(investorId) {
-  const txns = (transactions[investorId] || [])
-    .slice()
-    .sort((a, b) => {
-      const da = a.date?.toDate ? a.date.toDate() : new Date(a.date);
-      const db_ = b.date?.toDate ? b.date.toDate() : new Date(b.date);
-      return da - db_;
-    });
+  const deposits       = transactions[investorId] || [];
+  const interestEntries = computeInterestTransactions(deposits, settings.monthlyRate);
+
+  const all = [...deposits, ...interestEntries].sort((a, b) => {
+    const da = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+    const db_ = b.date?.toDate ? b.date.toDate() : new Date(b.date);
+    return da - db_;
+  });
+
   let running = 0;
-  return txns.map(t => {
+  return all.map(t => {
     running += t.amount;
     return { ...t, runningBalance: running };
   });
@@ -102,17 +160,29 @@ function showLogin() {
 function showApp() {
   hide("view-login");
   show("app-shell");
+  migrateDeleteInterestTransactions();
   attachListeners();
   navigateTo("dashboard");
+}
+
+// One-time migration: delete all stored interest transactions (now computed on the fly)
+async function migrateDeleteInterestTransactions() {
+  try {
+    const snap = await db.collection("transactions").where("type", "==", "interest").get();
+    if (snap.empty) return;
+    const batch = db.batch();
+    snap.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+  } catch (e) {
+    console.error("Interest migration error:", e);
+  }
 }
 
 function detachListeners() {
   listeners.forEach(unsub => unsub());
   listeners.length = 0;
-  investors             = {};
-  transactions          = {};
-  interestBannerDismissed = false;
-  hide("interest-banner");
+  investors    = {};
+  transactions = {};
 }
 
 // ─── Firestore listeners ────────────────────────────────────
@@ -143,14 +213,14 @@ function attachListeners() {
     }, err => console.error("investors listener:", err));
   listeners.push(unsubInvestors);
 
-  // Transactions
+  // Transactions — only deposits are stored; interest is computed on the fly
   const unsubTxns = db.collection("transactions")
     .orderBy("date", "desc")
     .onSnapshot(snap => {
-      // Rebuild from scratch on each update (simple and correct)
       transactions = {};
       snap.forEach(doc => {
         const t = { id: doc.id, ...doc.data() };
+        if (t.type !== "deposit") return;
         if (!transactions[t.investorId]) transactions[t.investorId] = [];
         transactions[t.investorId].push(t);
       });
@@ -171,24 +241,6 @@ function navigateTo(view) {
   renderAll();
 }
 
-// ─── Interest Banner ───────────────────────────────────────
-function checkAutoInterest() {
-  if (interestBannerDismissed) return;
-  if (Object.keys(investors).length === 0) { hide("interest-banner"); return; }
-  const d = new Date();
-  const current = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-  if ((settings.lastInterestYearMonth || "") < current) {
-    show("interest-banner");
-  } else {
-    hide("interest-banner");
-  }
-}
-
-function dismissInterestBanner() {
-  interestBannerDismissed = true;
-  hide("interest-banner");
-}
-
 // ─── Render ────────────────────────────────────────────────
 function renderAll() {
   if (currentView === "dashboard") renderDashboard();
@@ -202,8 +254,6 @@ function renderNavBrand() {
 }
 
 function renderDashboard() {
-  checkAutoInterest();
-
   // Rate banner
   const rateEl = $("current-rate-display");
   if (rateEl) rateEl.textContent = `${settings.monthlyRate}%`;
@@ -368,55 +418,6 @@ async function submitDeposit() {
   }
 }
 
-// ─── Apply Monthly Interest ─────────────────────────────────
-async function applyMonthlyInterest() {
-  const ids = Object.keys(investors);
-  if (ids.length === 0) { toast("No investors to apply interest to.", "error"); return; }
-
-  const rate = settings.monthlyRate / 100;
-  const confirmed = confirm(
-    `Apply ${settings.monthlyRate}% monthly interest to all ${ids.length} investor(s)?\n\nThis will create an interest transaction for each investor based on their current balance.`
-  );
-  if (!confirmed) return;
-
-  const btn = $("btn-apply-interest");
-  if (btn) { btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> Applying…`; }
-
-  try {
-    const batch = db.batch();
-    const now = firebase.firestore.Timestamp.now();
-    ids.forEach(id => {
-      const { balance } = calcBalance(id);
-      if (balance <= 0) return;
-      const interestAmount = parseFloat((balance * rate).toFixed(2));
-      const ref = db.collection("transactions").doc();
-      batch.set(ref, {
-        investorId:  id,
-        type:        "interest",
-        amount:      interestAmount,
-        date:        now,
-        note:        `Monthly interest @ ${settings.monthlyRate}%`,
-        appliedRate: settings.monthlyRate,
-        addedBy:     currentUser.uid
-      });
-    });
-    await batch.commit();
-    const d = new Date();
-    const currentYearMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    await db.collection("config").doc("settings").set(
-      { lastInterestYearMonth: currentYearMonth },
-      { merge: true }
-    );
-    interestBannerDismissed = true;
-    hide("interest-banner");
-    toast("Monthly interest applied!", "success");
-  } catch (e) {
-    toast("Error applying interest: " + e.message, "error");
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = "Apply Monthly Interest"; }
-  }
-}
-
 // ─── Transaction History Modal ──────────────────────────────
 function openTxnModal(investorId) {
   const inv  = investors[investorId];
@@ -440,9 +441,12 @@ function openTxnModal(investorId) {
           <div class="txn-desc">${t.note || (t.type === "deposit" ? "Deposit" : "Interest")}</div>
           <div class="txn-date">${fmtDate(t.date)}</div>
         </div>
-        <div>
-          <div class="txn-amount ${t.type}">+${fmt(t.amount)}</div>
-          <div class="txn-balance">Bal: ${fmt(t.runningBalance)}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div>
+            <div class="txn-amount ${t.type}">+${fmt(t.amount)}</div>
+            <div class="txn-balance">Bal: ${fmt(t.runningBalance)}</div>
+          </div>
+          ${t.type === "deposit" ? `<button class="btn-icon" onclick="deleteDepositTransaction('${t.id}','${investorId}')" title="Delete deposit" style="color:#ef4444">🗑</button>` : ""}
         </div>`;
       list.appendChild(item);
     });
@@ -459,6 +463,18 @@ function openTxnModal(investorId) {
 }
 
 function closeTxnModal() { hide("modal-txn"); }
+
+async function deleteDepositTransaction(txnId, investorId) {
+  const confirmed = confirm("Delete this deposit? Interest will recalculate automatically.");
+  if (!confirmed) return;
+  try {
+    await db.collection("transactions").doc(txnId).delete();
+    closeTxnModal();
+    toast("Deposit deleted.", "success");
+  } catch (e) {
+    toast("Error: " + e.message, "error");
+  }
+}
 
 // ─── Delete Investor ────────────────────────────────────────
 async function confirmDeleteInvestor(investorId) {
