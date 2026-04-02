@@ -175,7 +175,8 @@ async function showApp() {
   await loadBanks();
   hide("loading-screen");
   show("app-shell");
-  const returnBankId = new URLSearchParams(window.location.search).get("bankId");
+  const returnBankId = sessionStorage.getItem("sf_return_bank");
+  sessionStorage.removeItem("sf_return_bank");
   if (returnBankId && banks[returnBankId]) {
     enterBank(returnBankId);
   } else {
@@ -713,6 +714,7 @@ function printInvestor(investorId) {
     date: (t.date?.toDate ? t.date.toDate() : new Date(t.date)).toISOString()
   }));
 
+  sessionStorage.setItem("sf_return_bank", currentBankId);
   sessionStorage.setItem("sf_print_data", JSON.stringify({
     bankId:   currentBankId,
     investor: { id: inv.id, name: inv.name, emoji: inv.emoji },

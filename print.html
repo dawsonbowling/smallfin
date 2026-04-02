@@ -15,7 +15,7 @@
 
 <!-- Print controls (hidden when printing) -->
 <div class="print-controls no-print">
-  <a id="back-link" href="index.html" class="back-link">← Back to Dashboard</a>
+  <a href="index.html" class="back-link">← Back to Dashboard</a>
   <div style="display:flex;gap:10px;align-items:center">
     <span id="print-status" style="color:rgba(255,255,255,0.6);font-size:0.85rem"></span>
     <div>
@@ -135,8 +135,7 @@ const raw = sessionStorage.getItem("sf_print_data");
 if (!raw) {
   $("print-status").textContent = "No data — please open this from the dashboard.";
 } else {
-  const { bankId, investor, settings, txns, deposited, interest, balance } = JSON.parse(raw);
-  if (bankId) $("back-link").href = `index.html?bankId=${bankId}`;
+  const { investor, settings, txns, deposited, interest, balance } = JSON.parse(raw);
 
   const now      = new Date();
   const stmtDate = now.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
