@@ -380,7 +380,9 @@ function renderNavBrand() {
   const verEl  = $("nav-version");
 
   if (nameEl) nameEl.textContent = currentBankId ? settings.bankName : "SmallFin";
-  if (iconEl) iconEl.textContent = currentBankId ? (settings.bankLogo || "🏦") : "🏦";
+  if (iconEl) iconEl.innerHTML   = currentBankId
+    ? (settings.bankLogo || "🏦")
+    : `<img src="smallfin-logo.png" alt="SmallFin" style="height:44px;width:auto;display:block">`;
   if (verEl)  verEl.textContent  = `v${VERSION}`;
 }
 
