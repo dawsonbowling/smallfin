@@ -41,7 +41,7 @@
 
       <!-- Create Account -->
       <div id="form-signup" class="hidden">
-        <p class="subtitle">Create your bank</p>
+        <p class="subtitle">Create your account</p>
         <form onsubmit="handleSignup(event)">
           <div class="form-group">
             <label for="signup-name">Your Name</label>
@@ -69,7 +69,7 @@
 
   <!-- Top Nav -->
   <nav class="top-nav">
-    <div class="nav-brand" onclick="navigateTo('dashboard')">
+    <div class="nav-brand" onclick="handleNavBrandClick()">
       <div class="nav-brand-icon" id="nav-brand-icon">🏦</div>
       <div>
         <div class="nav-bank-label" id="nav-bank-name">SmallFin</div>
@@ -78,12 +78,32 @@
     </div>
     <div class="nav-actions">
       <span id="nav-version" class="nav-version"></span>
-      <button id="nav-btn-dashboard" class="nav-btn" onclick="navigateTo('dashboard')">Dashboard</button>
-      <button id="nav-btn-settings"  class="nav-btn" onclick="navigateTo('settings')">Settings</button>
+      <button id="nav-btn-mybanks"   class="nav-btn hidden" onclick="exitBank()">← My Banks</button>
+      <button id="nav-btn-dashboard" class="nav-btn hidden" onclick="navigateTo('dashboard')">Dashboard</button>
+      <button id="nav-btn-settings"  class="nav-btn hidden" onclick="navigateTo('settings')">Settings</button>
       <div class="nav-divider"></div>
       <button class="nav-btn" onclick="handleLogout()">Sign Out</button>
     </div>
   </nav>
+
+  <!-- ─── My Banks ──────────────────────────────────────── -->
+  <div id="view-banks" class="hidden">
+    <div class="page">
+
+      <div class="page-header">
+        <div>
+          <h2>My Banks</h2>
+          <p class="subtitle">Select a bank to manage</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-gold" onclick="openCreateBankModal()">+ New Bank</button>
+        </div>
+      </div>
+
+      <div id="banks-grid" class="banks-grid"></div>
+
+    </div>
+  </div><!-- /view-banks -->
 
   <!-- ─── Dashboard ──────────────────────────────────────── -->
   <div id="view-dashboard" class="hidden">
@@ -204,6 +224,32 @@
 
 </div><!-- /app-shell -->
 
+<!-- ─── Modal: Create Bank ───────────────────────────────── -->
+<div id="modal-create-bank" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Create New Bank</h3>
+      <button class="btn-icon" onclick="closeCreateBankModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="new-bank-name">Bank Name</label>
+        <input type="text" id="new-bank-name" placeholder="e.g. The Smith Family Bank" maxlength="60"
+               onkeydown="if(event.key==='Enter') submitCreateBank()">
+      </div>
+      <div class="form-group">
+        <label>Bank Logo</label>
+        <div class="emoji-picker" id="create-bank-logo-picker"></div>
+        <input type="hidden" id="new-bank-logo" value="🏦">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeCreateBankModal()">Cancel</button>
+      <button id="btn-create-bank-submit" class="btn btn-primary" onclick="submitCreateBank()">Create Bank</button>
+    </div>
+  </div>
+</div>
+
 <!-- ─── Modal: Add Investor ──────────────────────────────── -->
 <div id="modal-add-investor" class="modal-backdrop hidden">
   <div class="modal">
@@ -275,7 +321,7 @@
   </div>
 </div>
 
-<!-- ─── Modal: Change Avatar ─────────────────────────────────── -->
+<!-- ─── Modal: Change Avatar ─────────────────────────────── -->
 <div id="modal-avatar" class="modal-backdrop hidden">
   <div class="modal" style="max-width:400px">
     <div class="modal-header">
@@ -296,7 +342,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="app.js?v=1.6"></script>
+<script src="app.js?v=2.0"></script>
 
 </body>
 </html>

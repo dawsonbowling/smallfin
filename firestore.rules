@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Banks ───────────────────────────────────────────────
+    // Only the owner can read or write their bank doc.
+    match /banks/{bankId} {
+      allow read, update, delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid;
+    }
+
+    // ─── Investors ───────────────────────────────────────────
+    // User must own the bank this investor belongs to.
+    match /investors/{investorId} {
+      allow read, update, delete: if request.auth != null
+        && get(/databases/$(database)/documents/banks/$(resource.data.bankId)).data.ownerId == request.auth.uid;
+      allow create: if request.auth != null
+        && get(/databases/$(database)/documents/banks/$(request.resource.data.bankId)).data.ownerId == request.auth.uid;
+    }
+
+    // ─── Transactions ─────────────────────────────────────────
+    // User must own the bank this transaction belongs to.
+    match /transactions/{txnId} {
+      allow read, update, delete: if request.auth != null
+        && get(/databases/$(database)/documents/banks/$(resource.data.bankId)).data.ownerId == request.auth.uid;
+      allow create: if request.auth != null
+        && get(/databases/$(database)/documents/banks/$(request.resource.data.bankId)).data.ownerId == request.auth.uid;
+    }
+
+    // ─── Block everything else ────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

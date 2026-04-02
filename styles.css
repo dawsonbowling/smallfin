@@ -676,6 +676,56 @@ body {
   z-index: 9998;
 }
 
+/* ─── Banks View ───────────────────────────────────────────── */
+.banks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 320px));
+  gap: 20px;
+}
+
+.bank-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  border: 2px solid transparent;
+  transition: box-shadow 0.2s, transform 0.15s, border-color 0.2s;
+}
+
+.bank-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-3px);
+  border-color: var(--gold);
+}
+
+.bank-card-logo {
+  width: 64px;
+  height: 64px;
+  background: var(--navy);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin-bottom: 4px;
+}
+
+.bank-card-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.bank-card-rate {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
 /* ─── Responsive ───────────────────────────────────────────── */
 @media (max-width: 600px) {
   .page { padding: 20px 16px; }
@@ -684,6 +734,7 @@ body {
   .header-actions .btn { flex: 1; justify-content: center; }
   .modal { border-radius: 16px; }
   .top-nav { padding: 0 16px; }
+  .banks-grid { grid-template-columns: 1fr; }
 }
 
 /* ═══════════════════════════════════════════════════════════════

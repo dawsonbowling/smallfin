@@ -1,9 +1,9 @@
 /* ─────────────────────────────────────────────────────────────
-   SmallFin — app.js
+   SmallFin — app.js  v2.0
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "1.6";
+const VERSION = "2.0";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -14,21 +14,19 @@ db.enablePersistence({ synchronizeTabs: true })
 
 // ─── State ─────────────────────────────────────────────────
 let currentUser   = null;
-let currentBankId = null;          // = currentUser.uid
-let settings      = { bankName: "SmallFin", monthlyRate: 10, bankLogo: "🏦" };
-let investors     = {};            // id → { name, emoji, createdAt }
-let transactions  = {};            // investorId → [deposit txn, ...]
+let currentBankId = null;
+let banks         = {};   // bankId → bank data
+let settings      = { bankName: "My Bank", monthlyRate: 10, bankLogo: "🏦" };
+let investors     = {};   // id → investor
+let transactions  = {};   // investorId → [deposit txns]
 
-// Active Firestore listeners — stored so we can detach on logout
 const listeners = [];
-
-// Prevents onAuthStateChanged from double-firing during signup
 let handlingSignup = false;
 
-// ─── Firestore helpers ──────────────────────────────────────
-const bankRef       = () => db.collection("banks").doc(currentBankId);
-const investorsRef  = () => bankRef().collection("investors");
-const txnsRef       = () => bankRef().collection("transactions");
+// ─── Firestore refs ─────────────────────────────────────────
+const bankRef      = () => db.collection("banks").doc(currentBankId);
+const investorsRef = () => db.collection("investors");
+const txnsRef      = () => db.collection("transactions");
 
 // ─── DOM helpers ───────────────────────────────────────────
 const $  = id => document.getElementById(id);
@@ -51,7 +49,7 @@ function toast(msg, type = "default") {
   setTimeout(() => t.remove(), 3200);
 }
 
-// ─── Currency formatter ─────────────────────────────────────
+// ─── Formatters ────────────────────────────────────────────
 function fmt(n) {
   return new Intl.NumberFormat("en-US", {
     style: "currency", currency: "USD", minimumFractionDigits: 2
@@ -64,11 +62,13 @@ function fmtDate(ts) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+function setInner(id, val) { const e = $(id); if (e) e.textContent = val; }
+
+function escHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
 // ─── Interest computation ────────────────────────────────────
-// Interest is never stored — always derived from deposit history.
-// Each month: priorBalance × rate, plus prorated interest for
-// deposits made mid-month: amount × (daysInMonth - depositDay + 1) / daysInMonth × rate.
-// Interest for month M is dated the 1st of month M+1.
 function computeInterestTransactions(deposits, monthlyRate) {
   if (!deposits || deposits.length === 0) return [];
   const rate = monthlyRate / 100;
@@ -91,7 +91,6 @@ function computeInterestTransactions(deposits, monthlyRate) {
 
   while (year < currentYear || (year === currentYear && month < currentMonth)) {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-
     const depositsThisMonth = sorted.filter(d => {
       const dd = d.date?.toDate ? d.date.toDate() : new Date(d.date);
       return dd.getFullYear() === year && dd.getMonth() === month;
@@ -125,7 +124,6 @@ function computeInterestTransactions(deposits, monthlyRate) {
   return result;
 }
 
-// ─── Balance calculator ─────────────────────────────────────
 function calcBalance(investorId) {
   const deposits  = transactions[investorId] || [];
   const interest  = computeInterestTransactions(deposits, settings.monthlyRate);
@@ -134,17 +132,14 @@ function calcBalance(investorId) {
   return { deposited, interest: earned, balance: deposited + earned };
 }
 
-// Running balance for statement / transaction modal
 function txnsWithRunningBalance(investorId) {
   const deposits        = transactions[investorId] || [];
   const interestEntries = computeInterestTransactions(deposits, settings.monthlyRate);
-
   const all = [...deposits, ...interestEntries].sort((a, b) => {
     const da = a.date?.toDate ? a.date.toDate() : new Date(a.date);
     const db_ = b.date?.toDate ? b.date.toDate() : new Date(b.date);
     return da - db_;
   });
-
   let running = 0;
   return all.map(t => {
     running += t.amount;
@@ -163,6 +158,7 @@ auth.onAuthStateChanged(async user => {
     hide("loading-screen");
     currentUser   = null;
     currentBankId = null;
+    banks         = {};
     detachListeners();
     showLogin();
   }
@@ -176,101 +172,117 @@ function showLogin() {
 
 async function showApp() {
   hide("view-login");
-  currentBankId = currentUser.uid;
-  await setupBank();
+  await loadBanks();
   hide("loading-screen");
   show("app-shell");
-  migrateDeleteInterestTransactions();
+  navigateTo("banks");
+}
+
+// ─── My Banks ──────────────────────────────────────────────
+async function loadBanks() {
+  try {
+    const snap = await db.collection("banks")
+      .where("ownerId", "==", currentUser.uid)
+      .get();
+    banks = {};
+    snap.forEach(doc => {
+      banks[doc.id] = { id: doc.id, ...doc.data() };
+    });
+  } catch (err) {
+    console.error("loadBanks:", err);
+  }
+}
+
+function renderBanks() {
+  const grid = $("banks-grid");
+  if (!grid) return;
+  grid.innerHTML = "";
+
+  const sorted = Object.values(banks).sort((a, b) => {
+    const ta = a.createdAt?.toMillis ? a.createdAt.toMillis() : Infinity;
+    const tb = b.createdAt?.toMillis ? b.createdAt.toMillis() : Infinity;
+    return ta - tb;
+  });
+
+  if (sorted.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🏦</div>
+        <h3>No banks yet</h3>
+        <p>Create your first bank to get started.</p>
+      </div>`;
+    return;
+  }
+
+  sorted.forEach(bank => {
+    const card = el("div", "bank-card");
+    card.innerHTML = `
+      <div class="bank-card-logo">${bank.bankLogo || "🏦"}</div>
+      <div class="bank-card-name">${escHtml(bank.bankName)}</div>
+      <div class="bank-card-rate">${bank.monthlyRate ?? 10}% / mo</div>
+      <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="enterBank('${bank.id}')">Enter →</button>`;
+    grid.appendChild(card);
+  });
+}
+
+function enterBank(bankId) {
+  currentBankId = bankId;
+  settings = { bankName: "My Bank", monthlyRate: 10, bankLogo: "🏦", ...banks[bankId] };
+  detachListeners();
   attachListeners();
   navigateTo("dashboard");
 }
 
-// ─── Bank setup & migration ─────────────────────────────────
-async function setupBank() {
-  const bankDoc = await bankRef().get();
-  if (bankDoc.exists) return; // Already set up
+function exitBank() {
+  detachListeners();
+  currentBankId = null;
+  settings      = { bankName: "My Bank", monthlyRate: 10, bankLogo: "🏦" };
+  investors     = {};
+  transactions  = {};
+  navigateTo("banks");
+}
 
-  // Check if this user has legacy data (is the original admin)
-  const legacyCheck = await db.collection("transactions")
-    .where("addedBy", "==", currentBankId).limit(1).get();
+// ─── Create Bank Modal ─────────────────────────────────────
+function openCreateBankModal() {
+  $("new-bank-name").value = "";
+  renderEmojiPicker("create-bank-logo-picker", BANK_LOGOS, "🏦", "new-bank-logo");
+  show("modal-create-bank");
+  setTimeout(() => $("new-bank-name").focus(), 50);
+}
 
-  if (!legacyCheck.empty) {
-    await migrateOldDataToBank();
-  } else {
-    // Fresh bank for a new user
-    await bankRef().set({
-      bankName:    "My Bank",
+function closeCreateBankModal() {
+  hide("modal-create-bank");
+}
+
+async function submitCreateBank() {
+  const name = $("new-bank-name").value.trim();
+  if (!name) { toast("Please enter a bank name.", "error"); return; }
+  const logo = $("new-bank-logo").value || "🏦";
+  const btn  = $("btn-create-bank-submit");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Creating…`;
+  try {
+    const ref = db.collection("banks").doc();
+    await ref.set({
+      bankName:    name,
+      bankLogo:    logo,
       monthlyRate: 10,
-      bankLogo:    "🏦",
+      ownerId:     currentUser.uid,
       createdAt:   firebase.firestore.FieldValue.serverTimestamp()
     });
-  }
-}
-
-async function migrateOldDataToBank() {
-  try {
-    const [settingsSnap, investorsSnap, txnsSnap] = await Promise.all([
-      db.collection("config").doc("settings").get(),
-      db.collection("investors").get(),
-      db.collection("transactions").where("type", "==", "deposit").get()
-    ]);
-
-    const old = settingsSnap.exists
-      ? { bankName: "SmallFin", monthlyRate: 5, bankLogo: "🏦", ...settingsSnap.data() }
-      : { bankName: "SmallFin", monthlyRate: 5, bankLogo: "🏦" };
-
-    const batch = db.batch();
-
-    // Bank settings doc
-    batch.set(bankRef(), {
-      bankName:    old.bankName,
-      monthlyRate: old.monthlyRate,
-      bankLogo:    old.bankLogo || "🏦",
-      migratedAt:  firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    // Investors
-    investorsSnap.forEach(doc => {
-      batch.set(investorsRef().doc(doc.id), doc.data());
-    });
-
-    await batch.commit();
-
-    // Transactions (separate batch)
-    if (!txnsSnap.empty) {
-      const txnBatch = db.batch();
-      txnsSnap.forEach(doc => {
-        txnBatch.set(txnsRef().doc(doc.id), doc.data());
-      });
-      await txnBatch.commit();
-    }
+    banks[ref.id] = { id: ref.id, bankName: name, bankLogo: logo, monthlyRate: 10, ownerId: currentUser.uid };
+    closeCreateBankModal();
+    toast(`${name} created!`, "success");
+    renderBanks();
   } catch (e) {
-    console.error("Migration error:", e);
+    toast("Error: " + e.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Create Bank";
   }
 }
 
-// One-time cleanup: remove any stored interest transactions
-async function migrateDeleteInterestTransactions() {
-  try {
-    // Legacy flat collection
-    const oldSnap = await db.collection("transactions").where("type", "==", "interest").get();
-    if (!oldSnap.empty) {
-      const batch = db.batch();
-      oldSnap.forEach(doc => batch.delete(doc.ref));
-      await batch.commit();
-    }
-    // Bank subcollection (shouldn't exist, but just in case)
-    const newSnap = await txnsRef().where("type", "==", "interest").get();
-    if (!newSnap.empty) {
-      const batch = db.batch();
-      newSnap.forEach(doc => batch.delete(doc.ref));
-      await batch.commit();
-    }
-  } catch (e) {
-    console.error("Interest cleanup error:", e);
-  }
-}
-
+// ─── Firestore listeners ────────────────────────────────────
 function detachListeners() {
   listeners.forEach(unsub => unsub());
   listeners.length = 0;
@@ -278,21 +290,21 @@ function detachListeners() {
   transactions = {};
 }
 
-// ─── Firestore listeners ────────────────────────────────────
 function attachListeners() {
-  // Bank settings (the bank doc itself)
+  // Bank settings
   const unsubSettings = bankRef()
     .onSnapshot(snap => {
       if (snap.exists) {
-        settings = { bankName: "SmallFin", monthlyRate: 10, bankLogo: "🏦", ...snap.data() };
+        settings = { bankName: "My Bank", monthlyRate: 10, bankLogo: "🏦", ...snap.data() };
+        banks[currentBankId] = { id: currentBankId, ...snap.data() };
       }
       renderAll();
     }, err => console.error("settings listener:", err));
   listeners.push(unsubSettings);
 
-  // Investors
+  // Investors — filtered by bankId, sorted client-side
   const unsubInvestors = investorsRef()
-    .orderBy("createdAt", "asc")
+    .where("bankId", "==", currentBankId)
     .onSnapshot(snap => {
       snap.docChanges().forEach(change => {
         if (change.type === "removed") {
@@ -306,9 +318,9 @@ function attachListeners() {
     }, err => console.error("investors listener:", err));
   listeners.push(unsubInvestors);
 
-  // Transactions — only deposits stored; interest computed on the fly
+  // Transactions — filtered by bankId
   const unsubTxns = txnsRef()
-    .orderBy("date", "desc")
+    .where("bankId", "==", currentBankId)
     .onSnapshot(snap => {
       transactions = {};
       snap.forEach(doc => {
@@ -323,19 +335,35 @@ function attachListeners() {
 }
 
 // ─── Routing ───────────────────────────────────────────────
-let currentView = "dashboard";
+let currentView = "banks";
 
 function navigateTo(view) {
   currentView = view;
-  ["dashboard", "settings"].forEach(v => {
-    toggle(`view-${v}`, v === view);
-    $(`nav-btn-${v}`)?.classList.toggle("active", v === view);
-  });
+  const inBank = view === "dashboard" || view === "settings";
+
+  toggle("view-banks",     view === "banks");
+  toggle("view-dashboard", view === "dashboard");
+  toggle("view-settings",  view === "settings");
+
+  toggle("nav-btn-mybanks",   inBank);
+  toggle("nav-btn-dashboard", inBank);
+  toggle("nav-btn-settings",  inBank);
+
+  $("nav-btn-dashboard")?.classList.toggle("active", view === "dashboard");
+  $("nav-btn-settings")?.classList.toggle("active",  view === "settings");
+
   renderAll();
+}
+
+function handleNavBrandClick() {
+  if (currentView === "dashboard" || currentView === "settings") {
+    navigateTo("dashboard");
+  }
 }
 
 // ─── Render ────────────────────────────────────────────────
 function renderAll() {
+  if (currentView === "banks")     renderBanks();
   if (currentView === "dashboard") renderDashboard();
   if (currentView === "settings")  renderSettings();
   renderNavBrand();
@@ -343,11 +371,12 @@ function renderAll() {
 
 function renderNavBrand() {
   const nameEl = $("nav-bank-name");
-  if (nameEl) nameEl.textContent = settings.bankName;
   const iconEl = $("nav-brand-icon");
-  if (iconEl) iconEl.textContent = settings.bankLogo || "🏦";
-  const verEl = $("nav-version");
-  if (verEl) verEl.textContent = `v${VERSION}`;
+  const verEl  = $("nav-version");
+
+  if (nameEl) nameEl.textContent = currentBankId ? settings.bankName : "SmallFin";
+  if (iconEl) iconEl.textContent = currentBankId ? (settings.bankLogo || "🏦") : "🏦";
+  if (verEl)  verEl.textContent  = `v${VERSION}`;
 }
 
 function renderDashboard() {
@@ -369,7 +398,12 @@ function renderDashboard() {
   if (!grid) return;
   grid.innerHTML = "";
 
-  const ids = Object.keys(investors);
+  const ids = Object.keys(investors).sort((a, b) => {
+    const ta = investors[a].createdAt?.toMillis ? investors[a].createdAt.toMillis() : 0;
+    const tb = investors[b].createdAt?.toMillis ? investors[b].createdAt.toMillis() : 0;
+    return ta - tb;
+  });
+
   if (ids.length === 0) {
     grid.innerHTML = `
       <div class="empty-state">
@@ -424,15 +458,6 @@ function renderSettings() {
   renderEmojiPicker("bank-logo-picker", BANK_LOGOS, settings.bankLogo || "🏦", "setting-bank-logo");
 }
 
-function setInner(id, val) {
-  const el = $(id);
-  if (el) el.textContent = val;
-}
-
-function escHtml(s) {
-  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
-
 // ─── Emoji pickers ──────────────────────────────────────────
 const INVESTOR_EMOJIS = ["😀","🦁","🐯","🦊","🐻","🐼","🦄","🐸","🦋","🚀","⭐","🏆","🎯","🌟","🔥","💎","🎸","⚽","🎨","🦅"];
 const BANK_LOGOS      = ["🏦","🐟","🐠","🐡","🦈","💰","💵","💎","🌊","⭐","🚀","🏆","🔑","🛡️"];
@@ -461,9 +486,7 @@ function openAddInvestorModal() {
   setTimeout(() => $("new-investor-name").focus(), 50);
 }
 
-function closeAddInvestorModal() {
-  hide("modal-add-investor");
-}
+function closeAddInvestorModal() { hide("modal-add-investor"); }
 
 async function submitAddInvestor() {
   const name = $("new-investor-name").value.trim();
@@ -473,6 +496,7 @@ async function submitAddInvestor() {
   btn.innerHTML = `<span class="spinner"></span> Adding…`;
   try {
     await investorsRef().add({
+      bankId:    currentBankId,
       name,
       emoji:     $("new-investor-emoji").value || "😀",
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -495,8 +519,8 @@ function openDepositModal(investorId) {
   const inv = investors[investorId];
   $("deposit-investor-name").textContent = inv?.name || "Investor";
   $("deposit-amount").value = "";
-  $("deposit-note").value = "";
-  $("deposit-date").value = todayInputValue();
+  $("deposit-note").value   = "";
+  $("deposit-date").value   = todayInputValue();
   show("modal-deposit");
   setTimeout(() => $("deposit-amount").focus(), 50);
 }
@@ -518,6 +542,7 @@ async function submitDeposit() {
   btn.innerHTML = `<span class="spinner"></span> Saving…`;
   try {
     await txnsRef().add({
+      bankId:     currentBankId,
       investorId: depositTargetId,
       type:       "deposit",
       amount:     amountRaw,
@@ -582,8 +607,7 @@ function openTxnModal(investorId) {
 function closeTxnModal() { hide("modal-txn"); }
 
 async function deleteDepositTransaction(txnId, investorId) {
-  const confirmed = confirm("Delete this deposit? Interest will recalculate automatically.");
-  if (!confirmed) return;
+  if (!confirm("Delete this deposit? Interest will recalculate automatically.")) return;
   try {
     await txnsRef().doc(txnId).delete();
     closeTxnModal();
@@ -622,12 +646,12 @@ function closeAvatarModal() { hide("modal-avatar"); }
 // ─── Delete Investor ────────────────────────────────────────
 async function confirmDeleteInvestor(investorId) {
   const inv = investors[investorId];
-  const confirmed = confirm(
-    `Remove ${inv?.name}?\n\nThis will permanently delete all their transactions. This cannot be undone.`
-  );
-  if (!confirmed) return;
+  if (!confirm(`Remove ${inv?.name}?\n\nThis will permanently delete all their transactions. This cannot be undone.`)) return;
   try {
-    const snap = await txnsRef().where("investorId", "==", investorId).get();
+    const snap = await txnsRef()
+      .where("bankId",     "==", currentBankId)
+      .where("investorId", "==", investorId)
+      .get();
     const batch = db.batch();
     snap.forEach(doc => batch.delete(doc.ref));
     batch.delete(investorsRef().doc(investorId));
@@ -649,17 +673,19 @@ async function saveSettings() {
     return;
   }
 
-  const btn = $("btn-save-settings");
+  const logo = $("setting-bank-logo").value || "🏦";
+  const btn  = $("btn-save-settings");
   btn.disabled = true;
   btn.innerHTML = `<span class="spinner"></span> Saving…`;
   try {
     await bankRef().set({
       bankName,
       monthlyRate: rateRaw,
-      bankLogo:    $("setting-bank-logo").value || "🏦",
-      updatedAt:   firebase.firestore.FieldValue.serverTimestamp(),
-      updatedBy:   currentUser.uid
+      bankLogo:    logo,
+      ownerId:     currentUser.uid,
+      updatedAt:   firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
+    banks[currentBankId] = { ...banks[currentBankId], bankName, monthlyRate: rateRaw, bankLogo: logo };
     toast("Settings saved!", "success");
   } catch (e) {
     toast("Error: " + e.message, "error");
@@ -675,7 +701,6 @@ function printInvestor(investorId) {
   const txns   = txnsWithRunningBalance(investorId);
   const { deposited, interest, balance } = calcBalance(investorId);
 
-  // Serialize Firestore Timestamps to ISO strings for sessionStorage
   const serializedTxns = txns.map(t => ({
     ...t,
     date: (t.date?.toDate ? t.date.toDate() : new Date(t.date)).toISOString()
@@ -748,20 +773,35 @@ async function handleSignup(e) {
   handlingSignup = true;
   try {
     const cred = await auth.createUserWithEmailAndPassword(email, pass);
-    currentUser   = cred.user;
-    currentBankId = cred.user.uid;
+    currentUser = cred.user;
 
-    // Create bank before showing app
-    await bankRef().set({
+    // Create their first bank
+    const bankDocRef = db.collection("banks").doc();
+    await bankDocRef.set({
       bankName:    `${name}'s Bank`,
-      monthlyRate: 10,
       bankLogo:    "🏦",
+      monthlyRate: 10,
+      ownerId:     currentUser.uid,
       ownerName:   name,
       createdAt:   firebase.firestore.FieldValue.serverTimestamp()
     });
 
+    currentBankId = bankDocRef.id;
+    banks[currentBankId] = {
+      id:          currentBankId,
+      bankName:    `${name}'s Bank`,
+      bankLogo:    "🏦",
+      monthlyRate: 10,
+      ownerId:     currentUser.uid
+    };
+    settings = { ...banks[currentBankId] };
+
     handlingSignup = false;
-    await showApp();
+    hide("view-login");
+    hide("loading-screen");
+    show("app-shell");
+    attachListeners();
+    navigateTo("dashboard");
   } catch (err) {
     handlingSignup = false;
     errEl.textContent = friendlyAuthError(err.code);
@@ -793,13 +833,14 @@ function todayInputValue() {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
 
-// ─── Keyboard shortcuts ─────────────────────────────────────
+// ─── Keyboard / backdrop ────────────────────────────────────
 document.addEventListener("keydown", e => {
   if (e.key === "Escape") {
     hide("modal-add-investor");
     hide("modal-deposit");
     hide("modal-txn");
     hide("modal-avatar");
+    hide("modal-create-bank");
   }
 });
 
@@ -809,5 +850,6 @@ document.addEventListener("click", e => {
     hide("modal-deposit");
     hide("modal-txn");
     hide("modal-avatar");
+    hide("modal-create-bank");
   }
 });
