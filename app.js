@@ -177,7 +177,7 @@ async function showApp() {
   show("app-shell");
   const returnBankId = sessionStorage.getItem("sf_return_bank");
   sessionStorage.removeItem("sf_return_bank");
-  if (returnBankId && banks[returnBankId]) {
+  if (returnBankId) {
     enterBank(returnBankId);
   } else {
     navigateTo("banks");
