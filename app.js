@@ -577,29 +577,30 @@ function renderDashboard() {
             <div class="s-value">${fmt(balance)}</div>
           </div>
         </div>
-        <div class="investor-row-rate">
-          <span class="rate-pill">${currentRate}% / mo</span>
-          <button class="btn-icon" onclick="openRateModal('${id}')" title="Change rate" style="font-size:0.85rem">✏</button>
-        </div>
         <div class="investor-row-actions">
           <button class="btn btn-primary" onclick="openDepositModal('${id}')">+ New Transaction</button>
-          <button class="btn btn-ghost" onclick="printInvestor('${id}')">🖨 Statement</button>
           <button class="btn-icon" onclick="openTxnModal('${id}')" title="View transactions" style="color:rgba(0,0,0,0.4)">📋</button>
           <button class="btn-icon" onclick="confirmDeleteInvestor('${id}')" title="Remove investor" style="color:#ef4444">🗑</button>
         </div>
       </div>
       <div class="investor-row-divider"></div>
       <div class="investor-row-forecast">
-        <div class="forecast-label">
-          <span class="forecast-title">EOY Forecast</span>
-          <span class="forecast-amount" id="forecast-${id}">${fmt(forecast)}</span>
+        <div class="forecast-sentence">
+          If I invest
+          <span class="forecast-input-inline">
+            <span class="forecast-input-prefix">$</span><input
+              type="number" class="forecast-monthly-input" placeholder="0" min="0" step="1"
+              value="${monthlyDepositInputs[id] || ''}"
+              oninput="updateForecast('${id}', this.value)"
+            ><span class="forecast-input-suffix">/ mo,</span>
+          </span>
+          my EOY forecast is <span class="forecast-amount" id="forecast-${id}">${fmt(forecast)}</span>
         </div>
-        <div class="forecast-input">
-          <span class="forecast-input-prefix">+$</span>
-          <input type="number" class="forecast-monthly-input" placeholder="0" min="0" step="1"
-                 value="${monthlyDepositInputs[id] || ''}"
-                 oninput="updateForecast('${id}', this.value)">
-          <span class="forecast-input-suffix">/ mo</span>
+        <div class="forecast-meta">
+          <span class="rate-pill">${currentRate}% / mo</span>
+          <button class="btn-icon" onclick="openRateModal('${id}')" title="Change rate" style="font-size:0.85rem">✏</button>
+          <div style="flex:1"></div>
+          <button class="btn btn-ghost btn-sm" onclick="printInvestor('${id}')">🖨 Statement</button>
         </div>
       </div>`;
     grid.appendChild(row);
