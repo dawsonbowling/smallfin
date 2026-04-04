@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.12";
+const VERSION = "2.13";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);

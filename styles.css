@@ -1054,15 +1054,6 @@ input[type="date"]::-webkit-datetime-edit {
   .stat-card .label { font-size: 0.7rem; }
   .stat-card .value { font-size: 1.1rem; }
 
-  /* Fix date/number inputs overflowing modal on mobile */
-  .form-group input {
-    display: block;
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    box-sizing: border-box;
-  }
-
   /* Investor rows */
   .investor-row { padding: 14px 16px; }
   .investor-row-main { flex-wrap: wrap; gap: 10px; }
