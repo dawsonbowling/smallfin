@@ -425,7 +425,7 @@ function renderNavBrand() {
   if (iconEl) {
     iconEl.innerHTML = currentBankId
       ? (settings.bankLogo || "🏦")
-      : `<img src="smallfin-logo.png" alt="SmallFin" style="height:44px;width:auto;display:block">`;
+      : `<img src="logo-notxt.png" alt="SmallFin" style="height:44px;width:auto;display:block">`;
     iconEl.classList.toggle("nav-brand-icon--logo", !currentBankId);
   }
   if (verEl)  verEl.textContent  = `v${VERSION}`;
