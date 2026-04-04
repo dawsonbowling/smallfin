@@ -644,20 +644,15 @@ body {
 .form-group input:focus,
 .form-group select:focus { border-color: var(--navy-light); }
 
-/* ─── Safari date input fix ────────────────────────────────── */
-input[type="date"] {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  -webkit-appearance: textfield;
-  -moz-appearance: textfield;
-  padding: 10px 12px;
-  min-height: 1.2em;
+/* ─── Custom date picker (3 selects) ───────────────────────── */
+.date-picker-row {
+  display: flex;
+  gap: 8px;
 }
-
-input[type="date"]::-webkit-datetime-edit {
-  line-height: 1;
-  padding: 0;
+.date-picker-row select {
+  flex: 1;
+  width: 0;      /* override .form-group select width:100% so flex controls sizing */
+  min-width: 0;
 }
 
 .form-hint {
@@ -1054,13 +1049,32 @@ input[type="date"]::-webkit-datetime-edit {
   .stat-card .label { font-size: 0.7rem; }
   .stat-card .value { font-size: 1.1rem; }
 
-  /* Investor rows */
+  .btn-icon {
+    font-size: 0.85rem;
+    width: 30px;
+    height: 30px;
+    padding: 4px;
+  }
+}
+
+/* ─── Investor card stacking (applies up to tablet width) ───── */
+@media (max-width: 768px) {
   .investor-row { padding: 14px 16px; }
-  .investor-row-main { flex-wrap: wrap; gap: 10px; }
-  .investor-row-identity { min-width: 0; flex: 1; }
-  .investor-row-stats { order: 3; width: 100%; gap: 12px; }
+  .investor-row-main {
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  /* Identity (avatar + name) always takes its own full-width row */
+  .investor-row-identity {
+    width: 100%;
+    min-width: 0;
+  }
+  /* Stats drop to row 2 */
+  .investor-row-stats { order: 2; width: 100%; gap: 12px; }
+  /* Actions drop to row 3 */
   .investor-row-actions {
-    order: 4;
+    order: 3;
     width: 100%;
     justify-content: flex-end;
     gap: 4px;
@@ -1071,15 +1085,8 @@ input[type="date"]::-webkit-datetime-edit {
     padding: 7px 10px;
     white-space: nowrap;
   }
-  .btn-icon {
-    font-size: 0.85rem;
-    width: 30px;
-    height: 30px;
-    padding: 4px;
-  }
   .investor-row-divider { margin: 12px -16px 0; }
-
-  /* forecast-bot: inline-flex input stays vertically aligned in block text */
+  /* forecast-bot: keep input vertically aligned in block text */
   .forecast-bot .forecast-input-inline { vertical-align: middle; }
 }
 

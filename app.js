@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.13";
+const VERSION = "2.14";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -744,7 +744,7 @@ function openDepositModal(investorId) {
   $("deposit-investor-name").textContent = inv?.name || "Investor";
   $("deposit-amount").value = "";
   $("deposit-note").value   = "";
-  $("deposit-date").value   = todayInputValue();
+  populateDatePicker("deposit-date", todayInputValue());
   setTxnType("deposit");
   show("modal-deposit");
   setTimeout(() => $("deposit-amount").focus(), 50);
@@ -759,8 +759,8 @@ async function submitDeposit() {
   const amountRaw = parseFloat($("deposit-amount").value);
   if (!amountRaw || amountRaw <= 0) { toast("Enter a valid amount.", "error"); return; }
   const note    = $("deposit-note").value.trim();
-  const dateVal = $("deposit-date").value;
-  const dateObj = dateVal ? new Date(dateVal + "T12:00:00") : new Date();
+  const dateVal = getDatePickerValue("deposit-date");
+  const dateObj = new Date(dateVal + "T12:00:00");
 
   const btn = $("btn-deposit-submit");
   btn.disabled = true;
@@ -899,7 +899,7 @@ function openRateModal(investorId) {
   const inv = investors[investorId];
   $("rate-modal-name").textContent = inv?.name || "";
   $("rate-amount").value = getEffectiveRate(inv?.rateHistory, settings.monthlyRate);
-  $("rate-date").value   = todayInputValue();
+  populateDatePicker("rate-date", todayInputValue());
   renderRateHistory(investorId);
   show("modal-rate");
   setTimeout(() => $("rate-amount").focus(), 50);
@@ -935,7 +935,7 @@ function renderRateHistory(investorId) {
 
 async function submitRateChange() {
   const rateRaw = parseFloat($("rate-amount").value);
-  const dateVal = $("rate-date").value;
+  const dateVal = getDatePickerValue("rate-date");
   if (isNaN(rateRaw) || rateRaw < 0 || rateRaw > 100) {
     toast("Rate must be between 0 and 100.", "error"); return;
   }
@@ -1220,6 +1220,62 @@ function handleLogout() {
 function todayInputValue() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+// ─── Custom Date Picker ─────────────────────────────────────
+const DP_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function populateDatePicker(prefix, isoDate) {
+  const [yr, mo, dy] = isoDate.split("-").map(Number);
+  const mSel = $(prefix + "-m");
+  const dSel = $(prefix + "-d");
+  const ySel = $(prefix + "-y");
+  if (!mSel || !dSel || !ySel) return;
+  const curYear = new Date().getFullYear();
+
+  mSel.innerHTML = DP_MONTHS.map((name, i) =>
+    `<option value="${String(i+1).padStart(2,"0")}"${i+1===mo?" selected":""}>${name}</option>`
+  ).join("");
+
+  ySel.innerHTML = "";
+  for (let y = curYear - 10; y <= curYear + 5; y++) {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = y;
+    if (y === yr) opt.selected = true;
+    ySel.appendChild(opt);
+  }
+  _refreshDPDays(prefix, mo, yr, dy);
+}
+
+function _refreshDPDays(prefix, month, year, selDay) {
+  const dSel = $(prefix + "-d");
+  if (!dSel) return;
+  const days = new Date(year, month, 0).getDate();
+  const cur  = selDay != null ? selDay : (parseInt(dSel.value) || 1);
+  dSel.innerHTML = "";
+  for (let d = 1; d <= days; d++) {
+    const opt = document.createElement("option");
+    opt.value = String(d).padStart(2, "0");
+    opt.textContent = d;
+    if (d === Math.min(cur, days)) opt.selected = true;
+    dSel.appendChild(opt);
+  }
+}
+
+function onDatePickerChange(prefix) {
+  _refreshDPDays(prefix,
+    parseInt($(prefix + "-m").value),
+    parseInt($(prefix + "-y").value),
+    null
+  );
+}
+
+function getDatePickerValue(prefix) {
+  const m = $(prefix + "-m")?.value;
+  const d = $(prefix + "-d")?.value;
+  const y = $(prefix + "-y")?.value;
+  return (m && d && y) ? `${y}-${m}-${d}` : todayInputValue();
 }
 
 // ─── Keyboard / backdrop ────────────────────────────────────
