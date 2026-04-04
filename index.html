@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SmallFin</title>
   <link rel="icon" type="image/png" href="smallfin-favicon.png">
-  <link rel="stylesheet" href="styles.css?v=2.4">
+  <link rel="stylesheet" href="styles.css?v=2.5">
 </head>
 <body>
 
@@ -183,6 +183,19 @@
 
       <div style="margin-bottom:24px">
         <button id="btn-save-settings" class="btn btn-primary" style="width:100%;text-align:center" onclick="saveSettings()">Save Settings</button>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-header">
+          <h3>Invite Members</h3>
+          <p>Share this link to give others full access to this bank.</p>
+        </div>
+        <div class="settings-body">
+          <div class="invite-link-row">
+            <span id="invite-link-display" class="invite-link-text">—</span>
+            <button class="btn btn-ghost" onclick="copyInviteLink()">Copy</button>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -384,7 +397,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="app.js?v=2.4"></script>
+<script src="app.js?v=2.5"></script>
 
 </body>
 </html>

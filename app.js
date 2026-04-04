@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.4";
+const VERSION = "2.5";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -22,6 +22,16 @@ let transactions  = {};   // investorId → [deposit txns]
 
 const listeners = [];
 let handlingSignup = false;
+
+// ─── Invite link: capture ?join= from URL on load ───────────
+(function () {
+  const params = new URLSearchParams(window.location.search);
+  const code   = params.get("join");
+  if (code) {
+    sessionStorage.setItem("sf_pending_invite", code);
+    window.history.replaceState({}, "", window.location.pathname);
+  }
+})();
 
 // ─── Firestore refs ─────────────────────────────────────────
 const bankRef      = () => db.collection("banks").doc(currentBankId);
@@ -214,6 +224,14 @@ async function showApp() {
   await loadBanks();
   hide("loading-screen");
   show("app-shell");
+
+  const inviteCode = sessionStorage.getItem("sf_pending_invite");
+  if (inviteCode) {
+    sessionStorage.removeItem("sf_pending_invite");
+    await processInviteCode(inviteCode);
+    return;
+  }
+
   const returnBankId = sessionStorage.getItem("sf_return_bank");
   sessionStorage.removeItem("sf_return_bank");
   if (returnBankId) {
@@ -223,16 +241,56 @@ async function showApp() {
   }
 }
 
+async function processInviteCode(code) {
+  try {
+    const snap = await db.collection("banks").where("inviteCode", "==", code).limit(1).get();
+    if (snap.empty) {
+      toast("This invite link is invalid or has expired.", "error");
+      navigateTo("banks");
+      return;
+    }
+    const bankDoc  = snap.docs[0];
+    const bankData = bankDoc.data();
+
+    if (bankData.ownerId === currentUser.uid) {
+      banks[bankDoc.id] = { id: bankDoc.id, ...bankData };
+      enterBank(bankDoc.id);
+      toast(`Welcome back to ${bankData.bankName}!`, "default");
+      return;
+    }
+
+    if ((bankData.memberIds || []).includes(currentUser.uid)) {
+      banks[bankDoc.id] = { id: bankDoc.id, ...bankData };
+      enterBank(bankDoc.id);
+      toast(`Welcome back to ${bankData.bankName}!`, "default");
+      return;
+    }
+
+    await bankDoc.ref.update({
+      memberIds: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+    });
+    banks[bankDoc.id] = {
+      id: bankDoc.id, ...bankData,
+      memberIds: [...(bankData.memberIds || []), currentUser.uid]
+    };
+    enterBank(bankDoc.id);
+    toast(`You've joined ${bankData.bankName}!`, "success");
+  } catch (e) {
+    toast("Error joining bank: " + e.message, "error");
+    navigateTo("banks");
+  }
+}
+
 // ─── My Banks ──────────────────────────────────────────────
 async function loadBanks() {
   try {
-    const snap = await db.collection("banks")
-      .where("ownerId", "==", currentUser.uid)
-      .get();
+    const [ownedSnap, memberSnap] = await Promise.all([
+      db.collection("banks").where("ownerId", "==", currentUser.uid).get(),
+      db.collection("banks").where("memberIds", "array-contains", currentUser.uid).get()
+    ]);
     banks = {};
-    snap.forEach(doc => {
-      banks[doc.id] = { id: doc.id, ...doc.data() };
-    });
+    ownedSnap.forEach(doc => { banks[doc.id] = { id: doc.id, ...doc.data() }; });
+    memberSnap.forEach(doc => { banks[doc.id] = { id: doc.id, ...doc.data() }; });
   } catch (err) {
     console.error("loadBanks:", err);
   }
@@ -261,9 +319,10 @@ function renderBanks() {
 
   sorted.forEach(bank => {
     const card = el("div", "bank-card");
+    const isOwner = bank.ownerId === currentUser.uid;
     card.innerHTML = `
       <div class="bank-card-logo">${bank.bankLogo || "🏦"}</div>
-      <div class="bank-card-name">${escHtml(bank.bankName)}</div>
+      <div class="bank-card-name">${escHtml(bank.bankName)}${!isOwner ? ' <span class="bank-shared-badge">Shared</span>' : ''}</div>
       <div class="bank-card-rate">${bank.monthlyRate ?? 10}% / mo</div>
       <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="enterBank('${bank.id}')">Enter →</button>`;
     grid.appendChild(card);
@@ -308,14 +367,16 @@ async function submitCreateBank() {
   btn.innerHTML = `<span class="spinner"></span> Creating…`;
   try {
     const ref = db.collection("banks").doc();
+    const inviteCode = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
     await ref.set({
       bankName:    name,
       bankLogo:    logo,
       monthlyRate: 10,
       ownerId:     currentUser.uid,
+      inviteCode,
       createdAt:   firebase.firestore.FieldValue.serverTimestamp()
     });
-    banks[ref.id] = { id: ref.id, bankName: name, bankLogo: logo, monthlyRate: 10, ownerId: currentUser.uid };
+    banks[ref.id] = { id: ref.id, bankName: name, bankLogo: logo, monthlyRate: 10, ownerId: currentUser.uid, inviteCode };
     closeCreateBankModal();
     toast(`${name} created!`, "success");
     renderBanks();
@@ -506,6 +567,33 @@ function renderSettings() {
   const nameEl = $("setting-bank-name");
   if (nameEl) nameEl.value = settings.bankName;
   renderEmojiPicker("bank-logo-picker", BANK_LOGOS, settings.bankLogo || "🏦", "setting-bank-logo");
+  renderInviteSection();
+}
+
+async function renderInviteSection() {
+  let code = settings.inviteCode;
+  if (!code) {
+    code = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
+    try {
+      await bankRef().update({ inviteCode: code });
+      settings.inviteCode = code;
+      if (banks[currentBankId]) banks[currentBankId].inviteCode = code;
+    } catch (e) {
+      console.error("Failed to generate invite code:", e);
+      return;
+    }
+  }
+  const link    = `${window.location.origin}${window.location.pathname}?join=${code}`;
+  const display = $("invite-link-display");
+  if (display) display.textContent = link;
+}
+
+function copyInviteLink() {
+  const link = $("invite-link-display")?.textContent;
+  if (!link || link === "—") return;
+  navigator.clipboard.writeText(link)
+    .then(() => toast("Invite link copied!", "success"))
+    .catch(() => toast("Couldn't copy — please copy it manually.", "error"));
 }
 
 // ─── Emoji pickers ──────────────────────────────────────────

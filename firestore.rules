@@ -2,31 +2,53 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Helper: is the requesting user the owner or a member of a bank doc?
+    function isMember(bankData) {
+      return request.auth.uid == bankData.ownerId
+          || request.auth.uid in bankData.get('memberIds', []);
+    }
+
     // ─── Banks ───────────────────────────────────────────────
-    // Only the owner can read or write their bank doc.
     match /banks/{bankId} {
-      allow read, update, delete: if request.auth != null
-        && resource.data.ownerId == request.auth.uid;
+      // Owner or member can read
+      allow read: if request.auth != null && isMember(resource.data);
+
+      // Create: requester must be the owner
       allow create: if request.auth != null
         && request.resource.data.ownerId == request.auth.uid;
+
+      // Update: owner/member can change anything; OR anyone authenticated
+      // can add only themselves to memberIds (joining via invite link)
+      allow update: if request.auth != null && (
+        isMember(resource.data)
+        || (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds'])
+          && request.resource.data.memberIds.hasAll(resource.data.get('memberIds', []))
+          && request.resource.data.memberIds
+               .removeAll(resource.data.get('memberIds', []))
+               .hasOnly([request.auth.uid])
+        )
+      );
+
+      // Delete: owner only
+      allow delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
     }
 
     // ─── Investors ───────────────────────────────────────────
-    // User must own the bank this investor belongs to.
     match /investors/{investorId} {
       allow read, update, delete: if request.auth != null
-        && get(/databases/$(database)/documents/banks/$(resource.data.bankId)).data.ownerId == request.auth.uid;
+        && isMember(get(/databases/$(database)/documents/banks/$(resource.data.bankId)).data);
       allow create: if request.auth != null
-        && get(/databases/$(database)/documents/banks/$(request.resource.data.bankId)).data.ownerId == request.auth.uid;
+        && isMember(get(/databases/$(database)/documents/banks/$(request.resource.data.bankId)).data);
     }
 
     // ─── Transactions ─────────────────────────────────────────
-    // User must own the bank this transaction belongs to.
     match /transactions/{txnId} {
       allow read, update, delete: if request.auth != null
-        && get(/databases/$(database)/documents/banks/$(resource.data.bankId)).data.ownerId == request.auth.uid;
+        && isMember(get(/databases/$(database)/documents/banks/$(resource.data.bankId)).data);
       allow create: if request.auth != null
-        && get(/databases/$(database)/documents/banks/$(request.resource.data.bankId)).data.ownerId == request.auth.uid;
+        && isMember(get(/databases/$(database)/documents/banks/$(request.resource.data.bankId)).data);
     }
 
     // ─── Block everything else ────────────────────────────────

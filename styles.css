@@ -828,6 +828,38 @@ body {
   color: var(--muted);
 }
 
+.bank-shared-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gold-dark);
+  background: rgba(201,150,10,0.1);
+  border-radius: 4px;
+  padding: 1px 5px;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+.invite-link-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.invite-link-text {
+  flex: 1;
+  font-size: 0.82rem;
+  color: var(--muted);
+  word-break: break-all;
+  background: var(--bg);
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-family: monospace;
+}
+
 /* ─── Responsive ───────────────────────────────────────────── */
 @media (max-width: 600px) {
   .page { padding: 20px 16px; }
