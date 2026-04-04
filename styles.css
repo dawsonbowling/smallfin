@@ -644,6 +644,22 @@ body {
 .form-group input:focus,
 .form-group select:focus { border-color: var(--navy-light); }
 
+/* ─── Safari date input fix ────────────────────────────────── */
+input[type="date"] {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  -webkit-appearance: textfield;
+  -moz-appearance: textfield;
+  padding: 10px 12px;
+  min-height: 1.2em;
+}
+
+input[type="date"]::-webkit-datetime-edit {
+  line-height: 1;
+  padding: 0;
+}
+
 .form-hint {
   font-size: 0.8rem;
   color: var(--muted);
