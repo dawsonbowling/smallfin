@@ -540,8 +540,9 @@ body {
   font-size: 14px;
   flex-shrink: 0;
 }
-.txn-icon.deposit  { background: #dcfce7; color: #16a34a; }
-.txn-icon.interest { background: #fef9c3; color: #a16207; }
+.txn-icon.deposit    { background: #dcfce7; color: #16a34a; }
+.txn-icon.interest   { background: #fef9c3; color: #a16207; }
+.txn-icon.withdrawal { background: #fee2e2; color: #dc2626; }
 
 .txn-details { flex: 1; min-width: 0; }
 .txn-details .txn-desc { font-size: 0.88rem; font-weight: 600; color: var(--text); }
@@ -553,8 +554,35 @@ body {
   text-align: right;
   flex-shrink: 0;
 }
-.txn-amount.deposit  { color: var(--green); }
-.txn-amount.interest { color: var(--gold-dark); }
+.txn-amount.deposit    { color: var(--green); }
+.txn-amount.interest   { color: var(--gold-dark); }
+.txn-amount.withdrawal { color: var(--red); }
+
+/* ─── Transaction Type Toggle (New Transaction modal) ──────── */
+.txn-type-toggle {
+  display: flex;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+
+.txn-type-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+
+.txn-type-btn + .txn-type-btn { border-left: 2px solid var(--border); }
+
+.txn-type-btn.active[data-type="deposit"]    { background: var(--navy);  color: #fff; }
+.txn-type-btn.active[data-type="withdrawal"] { background: var(--red);   color: #fff; }
 
 .txn-balance {
   font-size: 0.78rem;
@@ -960,11 +988,13 @@ body {
   font-weight: 600;
 }
 
-.txn-type-badge.deposit  { background: #dcfce7; color: #166534; }
-.txn-type-badge.interest { background: #fef9c3; color: #92400e; }
+.txn-type-badge.deposit    { background: #dcfce7; color: #166534; }
+.txn-type-badge.interest   { background: #fef9c3; color: #92400e; }
+.txn-type-badge.withdrawal { background: #fee2e2; color: #991b1b; }
 
-.stmt-table .amount-deposit  { color: #16a34a; font-weight: 600; }
-.stmt-table .amount-interest { color: #a16207; font-weight: 600; }
+.stmt-table .amount-deposit    { color: #16a34a; font-weight: 600; }
+.stmt-table .amount-interest   { color: #a16207; font-weight: 600; }
+.stmt-table .amount-withdrawal { color: #dc2626; font-weight: 600; }
 
 .stmt-table .running-balance { font-weight: 600; color: #0a1628; }
 

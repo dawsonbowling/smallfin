@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SmallFin</title>
   <link rel="icon" type="image/png" href="smallfin-favicon.png">
-  <link rel="stylesheet" href="styles.css?v=2.1">
+  <link rel="stylesheet" href="styles.css?v=2.2">
 </head>
 <body>
 
@@ -275,14 +275,18 @@
   </div>
 </div>
 
-<!-- ─── Modal: Log Deposit ───────────────────────────────── -->
+<!-- ─── Modal: New Transaction ────────────────────────────── -->
 <div id="modal-deposit" class="modal-backdrop hidden">
   <div class="modal">
     <div class="modal-header">
-      <h3>Log Deposit — <span id="deposit-investor-name"></span></h3>
+      <h3>New Transaction — <span id="deposit-investor-name"></span></h3>
       <button class="btn-icon" onclick="closeDepositModal()">✕</button>
     </div>
     <div class="modal-body">
+      <div class="txn-type-toggle">
+        <button type="button" class="txn-type-btn active" data-type="deposit" onclick="setTxnType('deposit')">Deposit</button>
+        <button type="button" class="txn-type-btn" data-type="withdrawal" onclick="setTxnType('withdrawal')">Withdrawal</button>
+      </div>
       <div class="form-group">
         <label for="deposit-amount">Amount ($)</label>
         <input type="number" id="deposit-amount" placeholder="0.00" min="0.01" step="0.01">
@@ -299,6 +303,7 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeDepositModal()">Cancel</button>
       <button id="btn-deposit-submit" class="btn btn-primary" onclick="submitDeposit()">Log Deposit</button>
+      <!-- label updated dynamically by setTxnType() -->
     </div>
   </div>
 </div>
@@ -341,7 +346,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="app.js?v=2.1"></script>
+<script src="app.js?v=2.2"></script>
 
 </body>
 </html>

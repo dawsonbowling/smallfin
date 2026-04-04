@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.0";
+const VERSION = "2.2";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -69,14 +69,14 @@ function escHtml(s) {
 }
 
 // ─── Interest computation ────────────────────────────────────
-function computeInterestTransactions(deposits, monthlyRate) {
-  if (!deposits || deposits.length === 0) return [];
+function computeInterestTransactions(txns, monthlyRate) {
+  if (!txns || txns.length === 0) return [];
   const rate = monthlyRate / 100;
   const today = new Date();
   const currentYear  = today.getFullYear();
   const currentMonth = today.getMonth();
 
-  const sorted = deposits.slice().sort((a, b) => {
+  const sorted = txns.slice().sort((a, b) => {
     const da = a.date?.toDate ? a.date.toDate() : new Date(a.date);
     const db_ = b.date?.toDate ? b.date.toDate() : new Date(b.date);
     return da - db_;
@@ -91,17 +91,18 @@ function computeInterestTransactions(deposits, monthlyRate) {
 
   while (year < currentYear || (year === currentYear && month < currentMonth)) {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const depositsThisMonth = sorted.filter(d => {
+    const txnsThisMonth = sorted.filter(d => {
       const dd = d.date?.toDate ? d.date.toDate() : new Date(d.date);
       return dd.getFullYear() === year && dd.getMonth() === month;
     });
 
     let interest = runningBalance * rate;
-    depositsThisMonth.forEach(d => {
+    txnsThisMonth.forEach(d => {
       const dd = d.date?.toDate ? d.date.toDate() : new Date(d.date);
       const daysEarning = daysInMonth - dd.getDate() + 1;
-      interest += d.amount * (daysEarning / daysInMonth) * rate;
-      runningBalance += d.amount;
+      const sign = d.type === "withdrawal" ? -1 : 1;
+      interest += sign * d.amount * (daysEarning / daysInMonth) * rate;
+      runningBalance += sign * d.amount;
     });
 
     interest = parseFloat(interest.toFixed(2));
@@ -125,24 +126,26 @@ function computeInterestTransactions(deposits, monthlyRate) {
 }
 
 function calcBalance(investorId) {
-  const deposits  = transactions[investorId] || [];
-  const interest  = computeInterestTransactions(deposits, settings.monthlyRate);
-  const deposited = deposits.reduce((s, t) => s + t.amount, 0);
+  const txns     = transactions[investorId] || [];
+  const interest  = computeInterestTransactions(txns, settings.monthlyRate);
+  const deposited = txns.filter(t => t.type === "deposit").reduce((s, t) => s + t.amount, 0);
+  const withdrawn = txns.filter(t => t.type === "withdrawal").reduce((s, t) => s + t.amount, 0);
   const earned    = interest.reduce((s, t) => s + t.amount, 0);
-  return { deposited, interest: earned, balance: deposited + earned };
+  return { deposited, withdrawn, interest: earned, balance: deposited - withdrawn + earned };
 }
 
 function txnsWithRunningBalance(investorId) {
-  const deposits        = transactions[investorId] || [];
-  const interestEntries = computeInterestTransactions(deposits, settings.monthlyRate);
-  const all = [...deposits, ...interestEntries].sort((a, b) => {
+  const txns            = transactions[investorId] || [];
+  const interestEntries = computeInterestTransactions(txns, settings.monthlyRate);
+  const all = [...txns, ...interestEntries].sort((a, b) => {
     const da = a.date?.toDate ? a.date.toDate() : new Date(a.date);
     const db_ = b.date?.toDate ? b.date.toDate() : new Date(b.date);
     return da - db_;
   });
   let running = 0;
   return all.map(t => {
-    running += t.amount;
+    const sign = t.type === "withdrawal" ? -1 : 1;
+    running += sign * t.amount;
     return { ...t, runningBalance: running };
   });
 }
@@ -331,7 +334,7 @@ function attachListeners() {
       transactions = {};
       snap.forEach(doc => {
         const t = { id: doc.id, ...doc.data() };
-        if (t.type !== "deposit") return;
+        if (t.type !== "deposit" && t.type !== "withdrawal") return;
         if (!transactions[t.investorId]) transactions[t.investorId] = [];
         transactions[t.investorId].push(t);
       });
@@ -455,7 +458,7 @@ function renderDashboard() {
         </div>
       </div>
       <div class="investor-card-footer">
-        <button class="btn btn-primary" onclick="openDepositModal('${id}')">+ Deposit</button>
+        <button class="btn btn-primary" onclick="openDepositModal('${id}')">+ New Transaction</button>
         <button class="btn btn-ghost" onclick="printInvestor('${id}')">🖨 Statement</button>
         <button class="btn-icon" onclick="confirmDeleteInvestor('${id}')" title="Remove investor" style="margin-left:auto;color:#ef4444">🗑</button>
       </div>`;
@@ -526,6 +529,15 @@ async function submitAddInvestor() {
 
 // ─── Deposit Modal ──────────────────────────────────────────
 let depositTargetId = null;
+let depositType     = "deposit";
+
+function setTxnType(type) {
+  depositType = type;
+  document.querySelectorAll(".txn-type-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.type === type)
+  );
+  $("btn-deposit-submit").textContent = type === "deposit" ? "Log Deposit" : "Log Withdrawal";
+}
 
 function openDepositModal(investorId) {
   depositTargetId = investorId;
@@ -534,6 +546,7 @@ function openDepositModal(investorId) {
   $("deposit-amount").value = "";
   $("deposit-note").value   = "";
   $("deposit-date").value   = todayInputValue();
+  setTxnType("deposit");
   show("modal-deposit");
   setTimeout(() => $("deposit-amount").focus(), 50);
 }
@@ -557,14 +570,14 @@ async function submitDeposit() {
     await txnsRef().add({
       bankId:     currentBankId,
       investorId: depositTargetId,
-      type:       "deposit",
+      type:       depositType,
       amount:     amountRaw,
       date:       firebase.firestore.Timestamp.fromDate(dateObj),
       note:       note || "",
       addedBy:    currentUser.uid
     });
     closeDepositModal();
-    toast(`${fmt(amountRaw)} deposit logged!`, "success");
+    toast(`${depositType === "deposit" ? "Deposit" : "Withdrawal"} of ${fmt(amountRaw)} logged!`, "success");
   } catch (e) {
     toast("Error: " + e.message, "error");
   } finally {
@@ -589,19 +602,21 @@ function openTxnModal(investorId) {
   } else {
     [...txns].reverse().forEach(t => {
       const item = el("div", "txn-item");
-      const icon = t.type === "deposit" ? "↓" : "★";
+      const icon = t.type === "deposit" ? "↓" : t.type === "withdrawal" ? "↑" : "★";
+      const amtPrefix = t.type === "withdrawal" ? "−" : "+";
+      const desc = t.note || (t.type === "deposit" ? "Deposit" : t.type === "withdrawal" ? "Withdrawal" : "Interest");
       item.innerHTML = `
         <div class="txn-icon ${t.type}">${icon}</div>
         <div class="txn-details">
-          <div class="txn-desc">${t.note || (t.type === "deposit" ? "Deposit" : "Interest")}</div>
+          <div class="txn-desc">${desc}</div>
           <div class="txn-date">${fmtDate(t.date)}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <div>
-            <div class="txn-amount ${t.type}">+${fmt(t.amount)}</div>
+            <div class="txn-amount ${t.type}">${amtPrefix}${fmt(t.amount)}</div>
             <div class="txn-balance">Bal: ${fmt(t.runningBalance)}</div>
           </div>
-          ${t.type === "deposit" ? `<button class="btn-icon" onclick="deleteDepositTransaction('${t.id}','${investorId}')" title="Delete deposit" style="color:#ef4444">🗑</button>` : ""}
+          ${!t.computed ? `<button class="btn-icon" onclick="deleteDepositTransaction('${t.id}','${investorId}')" title="Delete" style="color:#ef4444">🗑</button>` : ""}
         </div>`;
       list.appendChild(item);
     });
@@ -620,7 +635,7 @@ function openTxnModal(investorId) {
 function closeTxnModal() { hide("modal-txn"); }
 
 async function deleteDepositTransaction(txnId, investorId) {
-  if (!confirm("Delete this deposit? Interest will recalculate automatically.")) return;
+  if (!confirm("Delete this transaction? Interest will recalculate automatically.")) return;
   try {
     await txnsRef().doc(txnId).delete();
     closeTxnModal();

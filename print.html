@@ -171,14 +171,19 @@ if (!raw) {
   if (!txns || txns.length === 0) {
     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">No transactions yet.</td></tr>`;
   } else {
-    tbody.innerHTML = txns.map(t => `
+    tbody.innerHTML = txns.map(t => {
+      const label = t.type === "deposit" ? "Deposit" : t.type === "withdrawal" ? "Withdrawal" : "Interest";
+      const defaultNote = t.type === "deposit" ? "Deposit" : t.type === "withdrawal" ? "Withdrawal" : `Interest @ ${settings.monthlyRate}%`;
+      const amtPrefix = t.type === "withdrawal" ? "−" : "+";
+      return `
       <tr>
         <td>${fmtDate(t.date)}</td>
-        <td>${escHtml(t.note || (t.type === "deposit" ? "Deposit" : `Interest @ ${settings.monthlyRate}%`))}</td>
-        <td><span class="txn-type-badge ${t.type}">${t.type === "deposit" ? "Deposit" : "Interest"}</span></td>
-        <td class="amount-${t.type}">+${fmt(t.amount)}</td>
+        <td>${escHtml(t.note || defaultNote)}</td>
+        <td><span class="txn-type-badge ${t.type}">${label}</span></td>
+        <td class="amount-${t.type}">${amtPrefix}${fmt(t.amount)}</td>
         <td class="running-balance">${fmt(t.runningBalance)}</td>
-      </tr>`).join("");
+      </tr>`;
+    }).join("");
   }
 }
 </script>
