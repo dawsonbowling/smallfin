@@ -9,6 +9,55 @@
   <style>
     body { background: #e8edf2; }
     @media print { body { background: #fff; } }
+
+    @media (max-width: 600px) {
+      body { overflow-x: hidden; }
+      .print-page { padding: 20px 16px; }
+
+      /* Stack header vertically */
+      .stmt-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+      }
+      .stmt-header > div:last-child {
+        flex-direction: row;
+        align-items: center;
+        gap: 16px;
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      /* Smaller bank name, max 2 lines */
+      .stmt-bank-name {
+        font-size: 1.2rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      /* Investor hero: allow Current Balance to wrap */
+      .stmt-investor-hero {
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .stmt-balance-hero {
+        margin-left: 0;
+        width: 100%;
+      }
+
+      /* Hide TYPE column */
+      .stmt-table th:nth-child(3),
+      .stmt-table td:nth-child(3) { display: none; }
+
+      /* Smaller table font */
+      .stmt-table { font-size: 0.78rem; }
+      .stmt-table th, .stmt-table td { padding: 7px 6px; }
+
+      /* Projection section */
+      .stmt-projection { flex-direction: column; gap: 10px; }
+    }
   </style>
 </head>
 <body>

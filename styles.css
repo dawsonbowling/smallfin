@@ -922,20 +922,142 @@ body {
   font-family: monospace;
 }
 
+/* ─── Hamburger Button (desktop: hidden) ───────────────────── */
+.hamburger-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  flex-shrink: 0;
+}
+.hamburger-btn span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: rgba(255,255,255,0.85);
+  border-radius: 2px;
+  transition: transform 0.2s, opacity 0.2s;
+}
+.hamburger-btn.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger-btn.active span:nth-child(2) { opacity: 0; }
+.hamburger-btn.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ─── Mobile Nav Menu (desktop: never shown) ───────────────── */
+.mobile-menu {
+  position: fixed;
+  top: 80px;
+  left: 0;
+  right: 0;
+  background: var(--navy);
+  border-bottom: 2px solid rgba(255,255,255,0.08);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.mobile-menu-item {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.85);
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: left;
+  padding: 14px 24px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.mobile-menu-item:hover { background: rgba(255,255,255,0.08); }
+.mobile-menu-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.1);
+  margin: 6px 0;
+}
+.mobile-menu-signout { color: rgba(239,68,68,0.9); }
+
 /* ─── Responsive ───────────────────────────────────────────── */
 @media (max-width: 600px) {
-  .page { padding: 20px 16px; }
-  .page-header { flex-direction: column; align-items: stretch; }
-  .header-actions { justify-content: stretch; }
-  .header-actions .btn { flex: 1; justify-content: center; }
-  .modal { border-radius: 16px; }
+  /* Prevent horizontal overflow globally */
+  body { overflow-x: hidden; }
+  .page { padding: 20px 16px; overflow-x: hidden; }
+
+  /* Nav */
   .top-nav { padding: 0 16px; }
+  .nav-story-links { display: none; }
+  .nav-actions .nav-btn,
+  .nav-actions .nav-divider { display: none; }
+  .hamburger-btn { display: flex; }
+
+  /* Bank name: smaller, no wrap, truncate */
+  .nav-bank-label {
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 160px;
+  }
+
+  /* Remove white box behind logo icon on mobile */
+  .nav-brand-icon--logo {
+    background: transparent !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Modal */
+  .modal { border-radius: 16px; }
+
+  /* Banks grid */
   .banks-grid { grid-template-columns: 1fr; }
+
+  /* Dashboard subtitle */
+  #view-dashboard .page-header .subtitle { display: none; }
+
+  /* Page header: keep as row, right-align actions */
+  .page-header { align-items: center; }
+  .header-actions .btn { flex: none; }
+
+  /* Stats grid: 2×2 with smaller cards */
+  .stats-bar {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .stat-card { padding: 12px 14px; }
+  .stat-card .label { font-size: 0.7rem; }
+  .stat-card .value { font-size: 1.1rem; }
+
+  /* Investor rows */
   .investor-row { padding: 14px 16px; }
-  .investor-row-main { flex-wrap: wrap; gap: 14px; }
+  .investor-row-main { flex-wrap: wrap; gap: 10px; }
   .investor-row-identity { min-width: 0; flex: 1; }
-  .investor-row-stats { order: 3; width: 100%; gap: 16px; }
-  .investor-row-actions { order: 4; width: 100%; justify-content: flex-end; }
+  .investor-row-stats { order: 3; width: 100%; gap: 12px; }
+  .investor-row-actions {
+    order: 4;
+    width: 100%;
+    justify-content: flex-end;
+    gap: 4px;
+    flex-wrap: nowrap;
+  }
+  .investor-row-actions .btn {
+    font-size: 0.8rem;
+    padding: 7px 10px;
+    white-space: nowrap;
+  }
+  .btn-icon {
+    font-size: 0.85rem;
+    width: 30px;
+    height: 30px;
+    padding: 4px;
+  }
   .investor-row-divider { margin: 12px -16px 0; }
 }
 

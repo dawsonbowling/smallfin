@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.5";
+const VERSION = "2.6";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -493,6 +493,39 @@ function renderNavBrand() {
     iconEl.classList.toggle("nav-brand-icon--logo", !currentBankId);
   }
   if (verEl)  verEl.textContent  = `v${VERSION}`;
+  syncMobileMenu();
+}
+
+// ─── Mobile Menu ───────────────────────────────────────────
+function toggleMobileMenu() {
+  const menu = $("mobile-menu");
+  const btn  = $("hamburger-btn");
+  if (!menu) return;
+  const isOpen = !menu.classList.contains("hidden");
+  if (isOpen) {
+    closeMobileMenu();
+  } else {
+    syncMobileMenu();
+    menu.classList.remove("hidden");
+    btn && btn.classList.add("active");
+  }
+}
+
+function closeMobileMenu() {
+  const menu = $("mobile-menu");
+  const btn  = $("hamburger-btn");
+  menu && menu.classList.add("hidden");
+  btn  && btn.classList.remove("active");
+}
+
+function syncMobileMenu() {
+  const inBank = !!currentBankId;
+  const myBanksEl  = $("mmenu-mybanks");
+  const settingsEl = $("mmenu-settings");
+  const dividerEl  = $("mmenu-bank-divider");
+  if (myBanksEl)  myBanksEl.classList.toggle("hidden",  !inBank);
+  if (settingsEl) settingsEl.classList.toggle("hidden", !inBank);
+  if (dividerEl)  dividerEl.classList.toggle("hidden",  !inBank);
 }
 
 // ─── EOY Forecast ──────────────────────────────────────────
@@ -1200,6 +1233,7 @@ document.addEventListener("keydown", e => {
     hide("modal-rate");
     hide("modal-our-story");
     hide("modal-how-it-works");
+    closeMobileMenu();
   }
 });
 
@@ -1213,5 +1247,13 @@ document.addEventListener("click", e => {
     hide("modal-rate");
     hide("modal-our-story");
     hide("modal-how-it-works");
+  }
+  // Close mobile menu when clicking outside of it
+  const menu = document.getElementById("mobile-menu");
+  const btn  = document.getElementById("hamburger-btn");
+  if (menu && !menu.classList.contains("hidden")) {
+    if (!menu.contains(e.target) && e.target !== btn && !btn?.contains(e.target)) {
+      closeMobileMenu();
+    }
   }
 });

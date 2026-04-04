@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SmallFin</title>
   <link rel="icon" type="image/png" href="smallfin-favicon.png">
-  <link rel="stylesheet" href="styles.css?v=2.5">
+  <link rel="stylesheet" href="styles.css?v=2.6">
 </head>
 <body>
 
@@ -88,8 +88,22 @@
       <button id="nav-btn-settings"  class="nav-btn hidden" onclick="navigateTo('settings')">Settings</button>
       <div class="nav-divider"></div>
       <button class="nav-btn" onclick="handleLogout()">Sign Out</button>
+      <button class="hamburger-btn" id="hamburger-btn" onclick="toggleMobileMenu()" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </nav>
+
+  <!-- Mobile nav menu (hidden by default) -->
+  <div id="mobile-menu" class="mobile-menu hidden">
+    <button class="mobile-menu-item" id="mmenu-mybanks" onclick="exitBank();closeMobileMenu()">← My Banks</button>
+    <button class="mobile-menu-item" id="mmenu-settings" onclick="navigateTo('settings');closeMobileMenu()">Settings</button>
+    <div class="mobile-menu-divider" id="mmenu-bank-divider"></div>
+    <button class="mobile-menu-item" onclick="show('modal-our-story');closeMobileMenu()">Our Story</button>
+    <button class="mobile-menu-item" onclick="show('modal-how-it-works');closeMobileMenu()">How It Works</button>
+    <div class="mobile-menu-divider"></div>
+    <button class="mobile-menu-item mobile-menu-signout" onclick="handleLogout()">Sign Out</button>
+  </div>
 
   <!-- ─── My Banks ──────────────────────────────────────── -->
   <div id="view-banks" class="hidden">
@@ -407,7 +421,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="app.js?v=2.5"></script>
+<script src="app.js?v=2.6"></script>
 
 </body>
 </html>
