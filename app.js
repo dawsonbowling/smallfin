@@ -627,12 +627,10 @@ function openTxnModal(investorId) {
   const { deposited, interest, balance } = calcBalance(investorId);
 
   // Merge rate-change events from rateHistory for display only
-  const rateEvents = (inv.rateHistory || []).map(r => ({
-    type: "rate-change",
-    rate: r.rate,
-    date: r.effectiveDate,
-    computed: true
-  }));
+  const rateEvents = (inv.rateHistory || []).map(r => {
+    const d = r.effectiveDate?.toDate ? r.effectiveDate.toDate() : new Date(r.effectiveDate);
+    return { type: "rate-change", rate: r.rate, date: r.effectiveDate, dateIso: d.toISOString().slice(0, 10), computed: true };
+  });
   const all = [...txns, ...rateEvents].sort((a, b) => {
     const da = a.date?.toDate ? a.date.toDate() : new Date(a.date);
     const db_ = b.date?.toDate ? b.date.toDate() : new Date(b.date);
@@ -655,7 +653,8 @@ function openTxnModal(investorId) {
           <div class="txn-details">
             <div class="txn-desc">Rate changed to ${t.rate}% / mo</div>
             <div class="txn-date">${fmtDate(t.date)}</div>
-          </div>`;
+          </div>
+          <button class="btn-icon" onclick="deleteRateChange('${investorId}','${t.dateIso}')" title="Delete" style="color:#ef4444">🗑</button>`;
       } else {
         const icon = t.type === "deposit" ? "↓" : t.type === "withdrawal" ? "↑" : "★";
         const amtPrefix = t.type === "withdrawal" ? "−" : "+";
@@ -817,6 +816,24 @@ async function deleteRateEntry(index) {
     renderRateHistory(rateTargetId);
     renderAll();
     toast("Rate entry removed.", "success");
+  } catch (e) {
+    toast("Error: " + e.message, "error");
+  }
+}
+
+async function deleteRateChange(investorId, dateIso) {
+  if (!confirm("Remove this rate change? Interest will recalculate automatically.")) return;
+  const inv = investors[investorId] || {};
+  const updated = (inv.rateHistory || []).filter(r => {
+    const d = r.effectiveDate?.toDate ? r.effectiveDate.toDate() : new Date(r.effectiveDate);
+    return d.toISOString().slice(0, 10) !== dateIso;
+  });
+  try {
+    await investorsRef().doc(investorId).update({ rateHistory: updated });
+    investors[investorId] = { ...inv, rateHistory: updated };
+    closeTxnModal();
+    renderAll();
+    toast("Rate change removed.", "success");
   } catch (e) {
     toast("Error: " + e.message, "error");
   }
