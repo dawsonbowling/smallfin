@@ -68,10 +68,42 @@ function escHtml(s) {
   return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
+// ─── Per-investor rate helpers ───────────────────────────────
+function getEffectiveRate(rateHistory, fallbackRate) {
+  if (!rateHistory || rateHistory.length === 0) return fallbackRate;
+  const now = new Date();
+  const active = rateHistory
+    .filter(r => {
+      const d = r.effectiveDate?.toDate ? r.effectiveDate.toDate() : new Date(r.effectiveDate);
+      return d <= now;
+    })
+    .sort((a, b) => {
+      const da = a.effectiveDate?.toDate ? a.effectiveDate.toDate() : new Date(a.effectiveDate);
+      const db_ = b.effectiveDate?.toDate ? b.effectiveDate.toDate() : new Date(b.effectiveDate);
+      return db_ - da;
+    })[0];
+  return active !== undefined ? active.rate : fallbackRate;
+}
+
+function getRateForMonth(rateHistory, year, month, fallbackRate) {
+  if (!rateHistory || rateHistory.length === 0) return fallbackRate;
+  const monthStart = new Date(year, month, 1);
+  const active = rateHistory
+    .filter(r => {
+      const d = r.effectiveDate?.toDate ? r.effectiveDate.toDate() : new Date(r.effectiveDate);
+      return d <= monthStart;
+    })
+    .sort((a, b) => {
+      const da = a.effectiveDate?.toDate ? a.effectiveDate.toDate() : new Date(a.effectiveDate);
+      const db_ = b.effectiveDate?.toDate ? b.effectiveDate.toDate() : new Date(b.effectiveDate);
+      return db_ - da;
+    })[0];
+  return active !== undefined ? active.rate : fallbackRate;
+}
+
 // ─── Interest computation ────────────────────────────────────
-function computeInterestTransactions(txns, monthlyRate) {
+function computeInterestTransactions(txns, rateHistory, fallbackRate) {
   if (!txns || txns.length === 0) return [];
-  const rate = monthlyRate / 100;
   const today = new Date();
   const currentYear  = today.getFullYear();
   const currentMonth = today.getMonth();
@@ -90,6 +122,8 @@ function computeInterestTransactions(txns, monthlyRate) {
   let runningBalance = 0;
 
   while (year < currentYear || (year === currentYear && month < currentMonth)) {
+    const monthlyRate = getRateForMonth(rateHistory, year, month, fallbackRate);
+    const rate = monthlyRate / 100;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const txnsThisMonth = sorted.filter(d => {
       const dd = d.date?.toDate ? d.date.toDate() : new Date(d.date);
@@ -126,8 +160,9 @@ function computeInterestTransactions(txns, monthlyRate) {
 }
 
 function calcBalance(investorId) {
-  const txns     = transactions[investorId] || [];
-  const interest  = computeInterestTransactions(txns, settings.monthlyRate);
+  const txns      = transactions[investorId] || [];
+  const inv       = investors[investorId] || {};
+  const interest  = computeInterestTransactions(txns, inv.rateHistory, settings.monthlyRate);
   const deposited = txns.filter(t => t.type === "deposit").reduce((s, t) => s + t.amount, 0);
   const withdrawn = txns.filter(t => t.type === "withdrawal").reduce((s, t) => s + t.amount, 0);
   const earned    = interest.reduce((s, t) => s + t.amount, 0);
@@ -136,7 +171,8 @@ function calcBalance(investorId) {
 
 function txnsWithRunningBalance(investorId) {
   const txns            = transactions[investorId] || [];
-  const interestEntries = computeInterestTransactions(txns, settings.monthlyRate);
+  const inv             = investors[investorId] || {};
+  const interestEntries = computeInterestTransactions(txns, inv.rateHistory, settings.monthlyRate);
   const all = [...txns, ...interestEntries].sort((a, b) => {
     const da = a.date?.toDate ? a.date.toDate() : new Date(a.date);
     const db_ = b.date?.toDate ? b.date.toDate() : new Date(b.date);
@@ -433,36 +469,39 @@ function renderDashboard() {
   ids.forEach(id => {
     const inv = investors[id];
     const { deposited, interest, balance } = calcBalance(id);
+    const currentRate = getEffectiveRate(inv.rateHistory, settings.monthlyRate);
     const avatar = inv.emoji || inv.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-    const card = el("div", "investor-card");
-    card.innerHTML = `
-      <div class="investor-card-header">
+    const row = el("div", "investor-row");
+    row.innerHTML = `
+      <div class="investor-row-identity">
         <div class="investor-avatar" onclick="openAvatarModal('${id}')" title="Change avatar" style="cursor:pointer">${avatar}</div>
         <span class="investor-name">${escHtml(inv.name)}</span>
-        <button class="btn-icon" onclick="openTxnModal('${id}')" title="View transactions" style="color:rgba(255,255,255,0.6)">📋</button>
       </div>
-      <div class="investor-card-body">
-        <div class="investor-stats">
-          <div class="investor-stat">
-            <div class="s-label">Deposited</div>
-            <div class="s-value">${fmt(deposited)}</div>
-          </div>
-          <div class="investor-stat interest">
-            <div class="s-label">Interest</div>
-            <div class="s-value">${fmt(interest)}</div>
-          </div>
-          <div class="investor-stat balance" style="grid-column:1/-1">
-            <div class="s-label">Current Balance</div>
-            <div class="s-value">${fmt(balance)}</div>
-          </div>
+      <div class="investor-row-stats">
+        <div class="investor-stat">
+          <div class="s-label">Deposited</div>
+          <div class="s-value">${fmt(deposited)}</div>
+        </div>
+        <div class="investor-stat interest">
+          <div class="s-label">Interest</div>
+          <div class="s-value">${fmt(interest)}</div>
+        </div>
+        <div class="investor-stat balance">
+          <div class="s-label">Balance</div>
+          <div class="s-value">${fmt(balance)}</div>
         </div>
       </div>
-      <div class="investor-card-footer">
+      <div class="investor-row-rate">
+        <span class="rate-pill">${currentRate}% / mo</span>
+        <button class="btn-icon" onclick="openRateModal('${id}')" title="Change rate" style="font-size:0.85rem">✏</button>
+      </div>
+      <div class="investor-row-actions">
         <button class="btn btn-primary" onclick="openDepositModal('${id}')">+ New Transaction</button>
         <button class="btn btn-ghost" onclick="printInvestor('${id}')">🖨 Statement</button>
-        <button class="btn-icon" onclick="confirmDeleteInvestor('${id}')" title="Remove investor" style="margin-left:auto;color:#ef4444">🗑</button>
+        <button class="btn-icon" onclick="openTxnModal('${id}')" title="View transactions" style="color:rgba(0,0,0,0.4)">📋</button>
+        <button class="btn-icon" onclick="confirmDeleteInvestor('${id}')" title="Remove investor" style="color:#ef4444">🗑</button>
       </div>`;
-    grid.appendChild(card);
+    grid.appendChild(row);
   });
 }
 
@@ -671,6 +710,101 @@ function openAvatarModal(investorId) {
 
 function closeAvatarModal() { hide("modal-avatar"); }
 
+// ─── Rate Modal ─────────────────────────────────────────────
+let rateTargetId = null;
+
+function openRateModal(investorId) {
+  rateTargetId = investorId;
+  const inv = investors[investorId];
+  $("rate-modal-name").textContent = inv?.name || "";
+  $("rate-amount").value = getEffectiveRate(inv?.rateHistory, settings.monthlyRate);
+  $("rate-date").value   = todayInputValue();
+  renderRateHistory(investorId);
+  show("modal-rate");
+  setTimeout(() => $("rate-amount").focus(), 50);
+}
+
+function closeRateModal() { hide("modal-rate"); rateTargetId = null; }
+
+function renderRateHistory(investorId) {
+  const inv = investors[investorId] || {};
+  const history = (inv.rateHistory || []).slice().sort((a, b) => {
+    const da = a.effectiveDate?.toDate ? a.effectiveDate.toDate() : new Date(a.effectiveDate);
+    const db_ = b.effectiveDate?.toDate ? b.effectiveDate.toDate() : new Date(b.effectiveDate);
+    return db_ - da;
+  });
+  const el_ = $("rate-history-list");
+  if (!history.length) {
+    el_.innerHTML = `<p style="font-size:0.85rem;color:var(--muted);margin-top:8px">No custom rate set — using bank default (${settings.monthlyRate}% / mo).</p>`;
+    return;
+  }
+  el_.innerHTML = `
+    <div style="margin-top:12px">
+      <div style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Rate History</div>
+      ${history.map((r, i) => {
+        const d = r.effectiveDate?.toDate ? r.effectiveDate.toDate() : new Date(r.effectiveDate);
+        return `<div class="rate-history-item">
+          <span class="rate-history-date">${d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+          <span class="rate-history-rate">${r.rate}% / mo</span>
+          <button class="btn-icon" onclick="deleteRateEntry(${i})" title="Remove" style="color:#ef4444;font-size:0.85rem">🗑</button>
+        </div>`;
+      }).join("")}
+    </div>`;
+}
+
+async function submitRateChange() {
+  const rateRaw = parseFloat($("rate-amount").value);
+  const dateVal = $("rate-date").value;
+  if (isNaN(rateRaw) || rateRaw < 0 || rateRaw > 100) {
+    toast("Rate must be between 0 and 100.", "error"); return;
+  }
+  if (!dateVal) { toast("Please select an effective date.", "error"); return; }
+
+  const effectiveDate = firebase.firestore.Timestamp.fromDate(new Date(dateVal + "T00:00:00"));
+  const btn = $("btn-rate-submit");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Saving…`;
+  try {
+    const inv = investors[rateTargetId] || {};
+    const existing = inv.rateHistory || [];
+    const filtered = existing.filter(r => {
+      const d = r.effectiveDate?.toDate ? r.effectiveDate.toDate() : new Date(r.effectiveDate);
+      return d.toISOString().slice(0, 10) !== dateVal;
+    });
+    const updated = [...filtered, { rate: rateRaw, effectiveDate }];
+    await investorsRef().doc(rateTargetId).update({ rateHistory: updated });
+    investors[rateTargetId] = { ...inv, rateHistory: updated };
+    toast("Rate updated!", "success");
+    closeRateModal();
+    renderAll();
+  } catch (e) {
+    toast("Error: " + e.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Set Rate";
+  }
+}
+
+async function deleteRateEntry(index) {
+  if (!confirm("Remove this rate entry?")) return;
+  const inv = investors[rateTargetId] || {};
+  const sorted = (inv.rateHistory || []).slice().sort((a, b) => {
+    const da = a.effectiveDate?.toDate ? a.effectiveDate.toDate() : new Date(a.effectiveDate);
+    const db_ = b.effectiveDate?.toDate ? b.effectiveDate.toDate() : new Date(b.effectiveDate);
+    return db_ - da;
+  });
+  sorted.splice(index, 1);
+  try {
+    await investorsRef().doc(rateTargetId).update({ rateHistory: sorted });
+    investors[rateTargetId] = { ...inv, rateHistory: sorted };
+    renderRateHistory(rateTargetId);
+    renderAll();
+    toast("Rate entry removed.", "success");
+  } catch (e) {
+    toast("Error: " + e.message, "error");
+  }
+}
+
 // ─── Delete Investor ────────────────────────────────────────
 async function confirmDeleteInvestor(investorId) {
   const inv = investors[investorId];
@@ -728,6 +862,7 @@ function printInvestor(investorId) {
   const inv    = investors[investorId];
   const txns   = txnsWithRunningBalance(investorId);
   const { deposited, interest, balance } = calcBalance(investorId);
+  const currentRate = getEffectiveRate(inv.rateHistory, settings.monthlyRate);
 
   const serializedTxns = txns.map(t => ({
     ...t,
@@ -738,7 +873,7 @@ function printInvestor(investorId) {
   sessionStorage.setItem("sf_print_data", JSON.stringify({
     bankId:   currentBankId,
     investor: { id: inv.id, name: inv.name, emoji: inv.emoji },
-    settings: { ...settings },
+    settings: { ...settings, currentRate },
     txns:     serializedTxns,
     deposited,
     interest,
@@ -871,6 +1006,7 @@ document.addEventListener("keydown", e => {
     hide("modal-txn");
     hide("modal-avatar");
     hide("modal-create-bank");
+    hide("modal-rate");
   }
 });
 
@@ -881,5 +1017,6 @@ document.addEventListener("click", e => {
     hide("modal-txn");
     hide("modal-avatar");
     hide("modal-create-bank");
+    hide("modal-rate");
   }
 });

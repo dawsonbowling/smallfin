@@ -146,7 +146,7 @@ if (!raw) {
   const endOfYear  = new Date(now.getFullYear(), 11, 31);
   const msPerMonth = 1000 * 60 * 60 * 24 * 30.44;
   const monthsLeft = Math.max(0, Math.round((endOfYear - now) / msPerMonth));
-  const projected  = balance * Math.pow(1 + settings.monthlyRate / 100, monthsLeft);
+  const projected  = balance * Math.pow(1 + (settings.currentRate || settings.monthlyRate) / 100, monthsLeft);
 
   document.title = `${investor.name} — Bank Statement`;
 
@@ -162,7 +162,7 @@ if (!raw) {
   set("stmt-balance-2",      fmt(balance));
   set("stmt-deposited",      fmt(deposited));
   set("stmt-interest",       fmt(interest));
-  set("proj-rate",           `${settings.monthlyRate}%`);
+  set("proj-rate",           `${settings.currentRate || settings.monthlyRate}%`);
   set("proj-year",           String(now.getFullYear()));
   set("proj-months",         String(monthsLeft));
   set("proj-amount",         fmt(projected));

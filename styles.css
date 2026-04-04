@@ -332,61 +332,72 @@ body {
 .rate-banner .rate-label { font-size: 0.88rem; opacity: 0.85; }
 .rate-banner .rate-label strong { display: block; font-size: 1rem; opacity: 1; }
 
-/* ─── Investor Grid ────────────────────────────────────────── */
-.investor-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+/* ─── Investor List (horizontal rows) ─────────────────────── */
+.investor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.investor-card {
+.investor-row {
   background: var(--card);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  overflow: hidden;
-  transition: box-shadow 0.2s, transform 0.2s;
-}
-.investor-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
-
-.investor-card-header {
-  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
-  padding: 20px 20px 16px;
-  color: #fff;
+  padding: 16px 20px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 20px;
+  transition: box-shadow 0.2s;
+}
+.investor-row:hover { box-shadow: var(--shadow-lg); }
+
+.investor-row-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 150px;
+}
+
+.investor-row-stats {
+  display: flex;
+  gap: 28px;
+  flex: 1;
+}
+
+.investor-row-rate {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.investor-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .investor-avatar {
   width: 44px;
   height: 44px;
-  background: rgba(255,255,255,0.15);
+  background: var(--navy);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  border: 2px solid rgba(255,255,255,0.3);
+  font-size: 22px;
+  color: #fff;
+  flex-shrink: 0;
 }
 
 .investor-name {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
-  margin-left: 12px;
-  flex: 1;
-}
-
-.investor-card-body { padding: 20px; }
-
-.investor-stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 16px;
+  color: var(--navy);
 }
 
 .investor-stat .s-label {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;
@@ -400,29 +411,37 @@ body {
   color: var(--navy);
 }
 
-.investor-stat.balance .s-value {
-  font-size: 1.25rem;
-  color: var(--green);
-}
-
+.investor-stat.balance .s-value { font-size: 1.1rem; color: var(--green); }
 .investor-stat.interest .s-value { color: var(--gold-dark); }
 
-.investor-card-footer {
-  padding: 12px 20px;
+.rate-pill {
   background: var(--bg);
-  border-top: 1px solid var(--border);
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--navy);
 }
 
+/* ─── Rate History (in modal) ──────────────────────────────── */
+.rate-history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--bg);
+  margin-bottom: 6px;
+}
+.rate-history-date { font-size: 0.85rem; color: var(--muted); flex: 1; }
+.rate-history-rate { font-size: 0.88rem; font-weight: 700; color: var(--navy); }
+
 .empty-state {
-  grid-column: 1 / -1;
   text-align: center;
   padding: 64px 24px;
   color: var(--muted);
 }
-
 .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
 .empty-state h3 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 8px; }
 .empty-state p { font-size: 0.9rem; }
@@ -765,6 +784,11 @@ body {
   .modal { border-radius: 16px; }
   .top-nav { padding: 0 16px; }
   .banks-grid { grid-template-columns: 1fr; }
+  .investor-row { flex-wrap: wrap; gap: 14px; padding: 14px 16px; }
+  .investor-row-identity { min-width: 0; flex: 1; }
+  .investor-row-stats { order: 3; width: 100%; gap: 16px; }
+  .investor-row-rate { margin-left: auto; }
+  .investor-row-actions { order: 4; width: 100%; justify-content: flex-end; }
 }
 
 /* ═══════════════════════════════════════════════════════════════

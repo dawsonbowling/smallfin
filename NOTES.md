@@ -3,7 +3,7 @@
 ## What We Built
 SmallFin is a compound interest investment tracker for kids. It lets you track investments, visualize growth over time, and teach kids about the power of compound interest.
 
-## Current State (v2.2)
+## Current State (v2.3)
 - App is fully built and deployed to GitHub Pages
 - Live at: **smallfin.app** (custom domain active, HTTPS in progress)
 - Version number displayed in the nav (v2.0)
@@ -41,6 +41,7 @@ SmallFin is a compound interest investment tracker for kids. It lets you track i
 - ✅ Version number in nav header (bumped with each deploy)
 - ✅ Cache-busting via ?v= query string on app.js and styles.css
 - ✅ Withdrawals: "New Transaction" button opens modal with Deposit / Withdrawal toggle; withdrawals reduce balance and affect interest proration; shown in red in transaction history and statements
+- ✅ Per-investor interest rates with effective dates: each investor can have their own rate history; the correct rate for each month is used when computing interest; horizontal row layout replaces card grid
 
 ## Setup & Deploy
 - GitHub Pages: push to `main` → auto-deploys in ~2 minutes
@@ -48,5 +49,5 @@ SmallFin is a compound interest investment tracker for kids. It lets you track i
 - After deploying: hard refresh (`Ctrl+Shift+R`) to bypass CDN cache if changes aren't showing
 
 ## Future Ideas
-- Interest rates should be held separately for each investor. You can change the interest rate for each investor individually. You should be able to set a date for the new interest rate. Future or past.
 - Invite others to a bank
+- Logo in upper left should have no text
