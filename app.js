@@ -631,32 +631,54 @@ function openTxnModal(investorId) {
   const txns = txnsWithRunningBalance(investorId);
   const { deposited, interest, balance } = calcBalance(investorId);
 
+  // Merge rate-change events from rateHistory for display only
+  const rateEvents = (inv.rateHistory || []).map(r => ({
+    type: "rate-change",
+    rate: r.rate,
+    date: r.effectiveDate,
+    computed: true
+  }));
+  const all = [...txns, ...rateEvents].sort((a, b) => {
+    const da = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+    const db_ = b.date?.toDate ? b.date.toDate() : new Date(b.date);
+    return da - db_;
+  });
+
   $("txn-modal-title").textContent = `${inv?.name}'s Transactions`;
 
   const list = $("txn-modal-list");
   list.innerHTML = "";
 
-  if (txns.length === 0) {
+  if (all.length === 0) {
     list.innerHTML = `<div style="padding:24px;text-align:center;color:var(--muted)">No transactions yet.</div>`;
   } else {
-    [...txns].reverse().forEach(t => {
+    [...all].reverse().forEach(t => {
       const item = el("div", "txn-item");
-      const icon = t.type === "deposit" ? "↓" : t.type === "withdrawal" ? "↑" : "★";
-      const amtPrefix = t.type === "withdrawal" ? "−" : "+";
-      const desc = t.note || (t.type === "deposit" ? "Deposit" : t.type === "withdrawal" ? "Withdrawal" : "Interest");
-      item.innerHTML = `
-        <div class="txn-icon ${t.type}">${icon}</div>
-        <div class="txn-details">
-          <div class="txn-desc">${desc}</div>
-          <div class="txn-date">${fmtDate(t.date)}</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <div>
-            <div class="txn-amount ${t.type}">${amtPrefix}${fmt(t.amount)}</div>
-            <div class="txn-balance">Bal: ${fmt(t.runningBalance)}</div>
+      if (t.type === "rate-change") {
+        item.innerHTML = `
+          <div class="txn-icon rate-change">%</div>
+          <div class="txn-details">
+            <div class="txn-desc">Rate changed to ${t.rate}% / mo</div>
+            <div class="txn-date">${fmtDate(t.date)}</div>
+          </div>`;
+      } else {
+        const icon = t.type === "deposit" ? "↓" : t.type === "withdrawal" ? "↑" : "★";
+        const amtPrefix = t.type === "withdrawal" ? "−" : "+";
+        const desc = t.note || (t.type === "deposit" ? "Deposit" : t.type === "withdrawal" ? "Withdrawal" : "Interest");
+        item.innerHTML = `
+          <div class="txn-icon ${t.type}">${icon}</div>
+          <div class="txn-details">
+            <div class="txn-desc">${desc}</div>
+            <div class="txn-date">${fmtDate(t.date)}</div>
           </div>
-          ${!t.computed ? `<button class="btn-icon" onclick="deleteDepositTransaction('${t.id}','${investorId}')" title="Delete" style="color:#ef4444">🗑</button>` : ""}
-        </div>`;
+          <div style="display:flex;align-items:center;gap:8px">
+            <div>
+              <div class="txn-amount ${t.type}">${amtPrefix}${fmt(t.amount)}</div>
+              <div class="txn-balance">Bal: ${fmt(t.runningBalance)}</div>
+            </div>
+            ${!t.computed ? `<button class="btn-icon" onclick="deleteDepositTransaction('${t.id}','${investorId}')" title="Delete" style="color:#ef4444">🗑</button>` : ""}
+          </div>`;
+      }
       list.appendChild(item);
     });
   }

@@ -559,9 +559,10 @@ body {
   font-size: 14px;
   flex-shrink: 0;
 }
-.txn-icon.deposit    { background: #dcfce7; color: #16a34a; }
-.txn-icon.interest   { background: #fef9c3; color: #a16207; }
-.txn-icon.withdrawal { background: #fee2e2; color: #dc2626; }
+.txn-icon.deposit     { background: #dcfce7; color: #16a34a; }
+.txn-icon.interest    { background: #fef9c3; color: #a16207; }
+.txn-icon.withdrawal  { background: #fee2e2; color: #dc2626; }
+.txn-icon.rate-change { background: #e0e7ff; color: #4338ca; font-size: 11px; font-weight: 700; }
 
 .txn-details { flex: 1; min-width: 0; }
 .txn-details .txn-desc { font-size: 0.88rem; font-weight: 600; color: var(--text); }
