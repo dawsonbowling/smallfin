@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.7";
+const VERSION = "2.8";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -324,7 +324,6 @@ function renderBanks() {
     card.innerHTML = `
       <div class="bank-card-logo">${bank.bankLogo || "🏦"}</div>
       <div class="bank-card-name">${escHtml(bank.bankName)}${(!isOwner || isShared) ? ' <span class="bank-shared-badge">Shared</span>' : ''}</div>
-      <div class="bank-card-rate">${bank.monthlyRate ?? 10}% / mo</div>
       <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="enterBank('${bank.id}')">Enter →</button>`;
     grid.appendChild(card);
   });
@@ -630,7 +629,7 @@ function renderDashboard() {
               value="${monthlyDepositInputs[id] || ''}"
               oninput="updateForecast('${id}', this.value)"
             ><span class="forecast-input-suffix">/ mo,</span>
-          </span>
+          </span><br class="mob-break">
           my EOY forecast is <span class="forecast-amount" id="forecast-${id}">${fmt(forecast)}</span>
         </div>
         <div class="forecast-right">

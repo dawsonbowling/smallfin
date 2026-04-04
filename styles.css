@@ -412,6 +412,9 @@ body {
   flex-shrink: 0;
 }
 
+/* Mobile line-break inside forecast sentence (hidden on desktop) */
+.mob-break { display: none; }
+
 .forecast-input-inline {
   display: inline-flex;
   align-items: center;
@@ -1042,6 +1045,15 @@ body {
   .stat-card .label { font-size: 0.7rem; }
   .stat-card .value { font-size: 1.1rem; }
 
+  /* Fix date input overflowing modal on mobile */
+  .form-group input[type="date"],
+  .form-group input[type="number"],
+  .form-group input[type="text"],
+  .form-group input[type="email"] {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   /* Investor rows */
   .investor-row { padding: 14px 16px; }
   .investor-row-main { flex-wrap: wrap; gap: 10px; }
@@ -1066,6 +1078,22 @@ body {
     padding: 4px;
   }
   .investor-row-divider { margin: 12px -16px 0; }
+
+  /* Forecast row: top row = rate (left) + Statement (right),
+     bottom row = sentence (centered, wraps after "mo,") */
+  .investor-row-forecast {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .forecast-left  { order: 1; flex: 1; }
+  .forecast-right { order: 2; }
+  .forecast-center {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+  .mob-break { display: block; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
