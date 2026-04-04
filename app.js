@@ -319,10 +319,11 @@ function renderBanks() {
 
   sorted.forEach(bank => {
     const card = el("div", "bank-card");
-    const isOwner = bank.ownerId === currentUser.uid;
+    const isOwner  = bank.ownerId === currentUser.uid;
+    const isShared = (bank.memberIds || []).length > 0;
     card.innerHTML = `
       <div class="bank-card-logo">${bank.bankLogo || "🏦"}</div>
-      <div class="bank-card-name">${escHtml(bank.bankName)}${!isOwner ? ' <span class="bank-shared-badge">Shared</span>' : ''}</div>
+      <div class="bank-card-name">${escHtml(bank.bankName)}${(!isOwner || isShared) ? ' <span class="bank-shared-badge">Shared</span>' : ''}</div>
       <div class="bank-card-rate">${bank.monthlyRate ?? 10}% / mo</div>
       <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="enterBank('${bank.id}')">Enter →</button>`;
     grid.appendChild(card);
