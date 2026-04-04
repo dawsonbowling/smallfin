@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.2";
+const VERSION = "2.4";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -1029,6 +1029,8 @@ document.addEventListener("keydown", e => {
     hide("modal-avatar");
     hide("modal-create-bank");
     hide("modal-rate");
+    hide("modal-our-story");
+    hide("modal-how-it-works");
   }
 });
 
@@ -1040,5 +1042,7 @@ document.addEventListener("click", e => {
     hide("modal-avatar");
     hide("modal-create-bank");
     hide("modal-rate");
+    hide("modal-our-story");
+    hide("modal-how-it-works");
   }
 });

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SmallFin</title>
   <link rel="icon" type="image/png" href="smallfin-favicon.png">
-  <link rel="stylesheet" href="styles.css?v=2.3">
+  <link rel="stylesheet" href="styles.css?v=2.4">
 </head>
 <body>
 
@@ -68,11 +68,17 @@
 
   <!-- Top Nav -->
   <nav class="top-nav">
-    <div class="nav-brand" onclick="handleNavBrandClick()">
-      <div class="nav-brand-icon" id="nav-brand-icon">🏦</div>
-      <div id="nav-brand-text">
-        <div class="nav-bank-label" id="nav-bank-name">SmallFin</div>
-        <div class="nav-by-smallfin">by SmallFin</div>
+    <div class="nav-left">
+      <div class="nav-brand" onclick="handleNavBrandClick()">
+        <div class="nav-brand-icon" id="nav-brand-icon">🏦</div>
+        <div id="nav-brand-text">
+          <div class="nav-bank-label" id="nav-bank-name">SmallFin</div>
+          <div class="nav-by-smallfin">by SmallFin</div>
+        </div>
+      </div>
+      <div class="nav-story-links">
+        <button class="nav-btn nav-story-btn" onclick="show('modal-our-story')">Our Story</button>
+        <button class="nav-btn nav-story-btn" onclick="show('modal-how-it-works')">How It Works</button>
       </div>
     </div>
     <div class="nav-actions">
@@ -364,6 +370,51 @@
   </div>
 </div>
 
+<!-- ─── Modal: Our Story ─────────────────────────────────── -->
+<div id="modal-our-story" class="modal-backdrop hidden">
+  <div class="modal modal-prose">
+    <div class="modal-header">
+      <h3>Our Story</h3>
+      <button class="btn-icon" onclick="hide('modal-our-story')">✕</button>
+    </div>
+    <div class="modal-body modal-body-prose">
+      <p>My brother-in-law and I were sitting around talking about money the way you do when you're older and finally understand what you wish someone had told you at seven years old.</p>
+      <p>Compound interest. Not the textbook definition — the feeling. That moment when you realize money can work for you, that waiting is a strategy, that the most powerful thing you can do with a dollar is leave it alone.</p>
+      <p>We wanted to give that feeling to his daughter before the world had a chance to teach her the wrong lessons.</p>
+      <p>So we built her a bank.</p>
+      <p>The idea was simple: deposit real money, apply an exciting monthly return, and let her watch her savings grow in a way that no piggy bank or savings account ever could. Not 0.5% APY. Something that would actually move. Something that would make a seven-year-old check her balance.</p>
+      <p>Then, as the balance grows and the lesson sinks in, we slowly reduce the rate toward something more realistic — until the day comes to graduate her to a real bank. A real HYSA or IRA. A real investment account. With the foundation already built.</p>
+      <p>We didn't want to trick her. We wanted to make her fall in love with the concept before the real world offers her 0.5% and calls it a reward.</p>
+      <p class="prose-closing">That's SmallFin. We built it for one kid. Then we realized every kid deserved the same head start.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal: How It Works ───────────────────────────────── -->
+<div id="modal-how-it-works" class="modal-backdrop hidden">
+  <div class="modal modal-prose">
+    <div class="modal-header">
+      <h3>How It Works</h3>
+      <button class="btn-icon" onclick="hide('modal-how-it-works')">✕</button>
+    </div>
+    <div class="modal-body modal-body-prose">
+      <h4>The Setup</h4>
+      <p>A parent, grandparent, or mentor creates a SmallFin bank and adds their kid as an investor. The bank has a name, a logo, and a monthly interest rate — all set by the person running it. Then they deposit real money. Real dollars, tracked by date.</p>
+
+      <h4>How Interest Works</h4>
+      <p>SmallFin applies compound interest automatically, calculated from each deposit's history. No manual step required.</p>
+      <p>Every month, the running balance earns the monthly rate. Deposits made mid-month earn prorated interest — a deposit on the 15th of a 30-day month earns 15/30 of that month's interest. Each investor can have their own rate, with a full history of changes and the exact date each rate took effect.</p>
+      <p>Starting at 10% per month isn't a gimmick — it's the point. A child who watches $100 become $300 in a year understands compounding in a way a textbook never could. The rate steps down over time, moving toward real-world returns, until the child is ready to graduate.</p>
+
+      <h4>The Statement</h4>
+      <p>Every investor gets a printed bank statement on demand. Their name. Their balance. Every deposit and interest payment, in order. A projection of where they'll be by year's end. It's a physical artifact of a financial lesson — something a kid actually wants to hold, show off, and look forward to.</p>
+
+      <h4>The Graduation</h4>
+      <p class="prose-closing">SmallFin is designed to be outgrown. When a child is ready — when saving is a habit, not a chore — they graduate to a real HYSA, brokerage, or Roth IRA. With the foundation already built. They won't need to be convinced to invest as an adult. They already know what it feels like.</p>
+    </div>
+  </div>
+</div>
+
 <!-- ─── Toast container ──────────────────────────────────── -->
 <div id="toast-container"></div>
 
@@ -372,7 +423,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="app.js?v=2.3"></script>
+<script src="app.js?v=2.4"></script>
 
 </body>
 </html>
