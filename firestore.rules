@@ -10,8 +10,9 @@ service cloud.firestore {
 
     // ─── Banks ───────────────────────────────────────────────
     match /banks/{bankId} {
-      // Owner or member can read
-      allow read: if request.auth != null && isMember(resource.data);
+      // Any authenticated user can read — needed to look up a bank by inviteCode
+      // before the user is a member. Write rules still protect against unauthorized changes.
+      allow read: if request.auth != null;
 
       // Create: requester must be the owner
       allow create: if request.auth != null
