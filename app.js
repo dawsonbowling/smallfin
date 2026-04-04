@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.10";
+const VERSION = "2.11";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -617,11 +617,14 @@ function renderDashboard() {
       </div>
       <div class="investor-row-divider"></div>
       <div class="investor-row-forecast">
-        <div class="forecast-left">
-          <span class="rate-pill">${currentRate}% / mo</span>
-          <button class="btn-icon" onclick="openRateModal('${id}')" title="Change rate" style="font-size:0.85rem">✏</button>
+        <div class="forecast-mid">
+          <div class="forecast-left">
+            <span class="rate-pill">${currentRate}% / mo</span>
+            <button class="btn-icon" onclick="openRateModal('${id}')" title="Change rate" style="font-size:0.85rem">✏</button>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="printInvestor('${id}')">🖨 Statement</button>
         </div>
-        <div class="forecast-center">
+        <div class="forecast-bot">
           If I invest an additional
           <span class="forecast-input-inline">
             <span class="forecast-input-prefix">$</span><input
@@ -629,11 +632,8 @@ function renderDashboard() {
               value="${monthlyDepositInputs[id] || ''}"
               oninput="updateForecast('${id}', this.value)"
             ><span class="forecast-input-suffix">/ mo,</span>
-          </span><br class="mob-break">
+          </span><br>
           my EOY forecast is <span class="forecast-amount" id="forecast-${id}">${fmt(forecast)}</span>
-        </div>
-        <div class="forecast-right">
-          <button class="btn btn-ghost btn-sm" onclick="printInvestor('${id}')">🖨 Statement</button>
         </div>
       </div>`;
     grid.appendChild(row);

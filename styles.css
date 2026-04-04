@@ -385,35 +385,32 @@ body {
 
 .investor-row-forecast {
   display: flex;
-  align-items: center;
-  gap: 14px;
+  flex-direction: column;
+  gap: 8px;
   padding-top: 10px;
+}
+
+/* Row 2: rate pill left, Statement button right */
+.forecast-mid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .forecast-left {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex-shrink: 0;
 }
 
-.forecast-center {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 5px;
+/* Row 3: centered sentence, always block so <br> works */
+.forecast-bot {
+  text-align: center;
   font-size: 0.9rem;
   color: var(--muted);
-  justify-content: center;
+  line-height: 1.6;
 }
-
-.forecast-right {
-  flex-shrink: 0;
-}
-
-/* Mobile line-break inside forecast sentence (hidden on desktop) */
-.mob-break { display: none; }
 
 .forecast-input-inline {
   display: inline-flex;
@@ -577,7 +574,7 @@ body {
   color: var(--navy);
 }
 
-.modal-body { padding: 20px 24px; }
+.modal-body { padding: 20px 24px; overflow-x: hidden; }
 
 /* ─── Prose modals (Our Story, How It Works) ───────────────── */
 .modal-prose { max-width: 580px; }
@@ -1017,7 +1014,9 @@ body {
   }
 
   /* Modal */
+  .modal-backdrop { padding: 16px; }
   .modal { border-radius: 16px; }
+  .modal-body { padding: 16px 20px; }
 
   /* Banks grid */
   .banks-grid { grid-template-columns: 1fr; }
@@ -1073,26 +1072,8 @@ body {
   }
   .investor-row-divider { margin: 12px -16px 0; }
 
-  /* Forecast row:
-     Middle = rate pill (left) + Statement button (right)
-     Bottom = sentence centered, with line break after "mo," */
-  .investor-row-forecast {
-    flex-wrap: wrap;
-    gap: 8px 0;
-  }
-  .forecast-left  { order: 1; flex: 1; align-items: center; }
-  .forecast-right { order: 2; }
-  .forecast-center {
-    order: 3;
-    width: 100%;
-    /* Switch to block so <br> creates a real line break */
-    display: block;
-    text-align: center;
-    padding-top: 2px;
-  }
-  /* forecast-input-inline stays inline inside block context */
-  .forecast-center .forecast-input-inline { vertical-align: middle; }
-  .mob-break { display: inline; } /* <br> creates line break in block context */
+  /* forecast-bot: inline-flex input stays vertically aligned in block text */
+  .forecast-bot .forecast-input-inline { vertical-align: middle; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
