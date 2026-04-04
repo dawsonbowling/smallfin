@@ -480,9 +480,11 @@ function renderNavBrand() {
   const iconEl = $("nav-brand-icon");
   const verEl  = $("nav-version");
 
-  const textEl = $("nav-brand-text");
-  if (nameEl) nameEl.textContent = currentBankId ? settings.bankName : "SmallFin";
-  if (textEl) toggle("nav-brand-text", !!currentBankId);
+  const textEl    = $("nav-brand-text");
+  const subtitleEl = $("nav-by-smallfin");
+  if (nameEl)     nameEl.textContent = currentBankId ? settings.bankName : "SmallFin";
+  if (textEl)     show("nav-brand-text");
+  if (subtitleEl) toggle("nav-by-smallfin", !!currentBankId);
   if (iconEl) {
     iconEl.innerHTML = currentBankId
       ? (settings.bankLogo || "🏦")
@@ -970,6 +972,31 @@ async function saveSettings() {
   } finally {
     btn.disabled = false;
     btn.textContent = "Save Settings";
+  }
+}
+
+// ─── Delete Bank ───────────────────────────────────────────
+async function confirmDeleteBank() {
+  if ((settings.memberIds || []).length > 0) {
+    toast("Shared banks can't be deleted while members have access.", "error");
+    return;
+  }
+  if (!confirm(`Permanently delete "${settings.bankName}"?\n\nAll investors and transactions will be deleted. This cannot be undone.`)) return;
+  try {
+    const [invSnap, txnSnap] = await Promise.all([
+      investorsRef().where("bankId", "==", currentBankId).get(),
+      txnsRef().where("bankId", "==", currentBankId).get()
+    ]);
+    const batch = db.batch();
+    invSnap.forEach(doc => batch.delete(doc.ref));
+    txnSnap.forEach(doc => batch.delete(doc.ref));
+    batch.delete(bankRef());
+    await batch.commit();
+    delete banks[currentBankId];
+    exitBank();
+    toast("Bank deleted.", "success");
+  } catch (e) {
+    toast("Error: " + e.message, "error");
   }
 }
 

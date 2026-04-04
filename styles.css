@@ -693,6 +693,9 @@ body {
 
 .settings-actions { padding: 0 24px 20px; }
 
+.settings-danger { border: 1px solid #fecaca; }
+.settings-danger .settings-section-header h3 { color: var(--red); }
+
 /* ─── Emoji Picker ─────────────────────────────────────────── */
 .emoji-picker {
   display: flex;
