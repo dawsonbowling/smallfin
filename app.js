@@ -432,9 +432,6 @@ function renderNavBrand() {
 }
 
 function renderDashboard() {
-  const rateEl = $("current-rate-display");
-  if (rateEl) rateEl.textContent = `${settings.monthlyRate}%`;
-
   let totalDeposited = 0, totalInterest = 0;
   Object.keys(investors).forEach(id => {
     const b = calcBalance(id);
@@ -507,9 +504,7 @@ function renderDashboard() {
 
 function renderSettings() {
   const nameEl = $("setting-bank-name");
-  const rateEl = $("setting-monthly-rate");
   if (nameEl) nameEl.value = settings.bankName;
-  if (rateEl) rateEl.value = settings.monthlyRate;
   renderEmojiPicker("bank-logo-picker", BANK_LOGOS, settings.bankLogo || "🏦", "setting-bank-logo");
 }
 
@@ -849,13 +844,8 @@ async function confirmDeleteInvestor(investorId) {
 // ─── Settings ──────────────────────────────────────────────
 async function saveSettings() {
   const bankName = $("setting-bank-name").value.trim();
-  const rateRaw  = parseFloat($("setting-monthly-rate").value);
 
   if (!bankName) { toast("Bank name can't be empty.", "error"); return; }
-  if (isNaN(rateRaw) || rateRaw < 0 || rateRaw > 100) {
-    toast("Rate must be between 0 and 100.", "error");
-    return;
-  }
 
   const logo = $("setting-bank-logo").value || "🏦";
   const btn  = $("btn-save-settings");
@@ -864,12 +854,11 @@ async function saveSettings() {
   try {
     await bankRef().set({
       bankName,
-      monthlyRate: rateRaw,
-      bankLogo:    logo,
-      ownerId:     currentUser.uid,
-      updatedAt:   firebase.firestore.FieldValue.serverTimestamp()
+      bankLogo:  logo,
+      ownerId:   currentUser.uid,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
-    banks[currentBankId] = { ...banks[currentBankId], bankName, monthlyRate: rateRaw, bankLogo: logo };
+    banks[currentBankId] = { ...banks[currentBankId], bankName, bankLogo: logo };
     toast("Settings saved!", "success");
   } catch (e) {
     toast("Error: " + e.message, "error");

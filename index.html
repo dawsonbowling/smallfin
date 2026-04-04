@@ -126,17 +126,6 @@
         </div>
       </div>
 
-      <!-- Rate banner -->
-      <div class="rate-banner">
-        <div class="rate-info">
-          <div class="rate-badge"><span id="current-rate-display">—</span> / mo</div>
-          <div class="rate-label">
-            <strong>Current Monthly Rate</strong>
-            Change anytime in Settings → applies going forward only
-          </div>
-        </div>
-      </div>
-
       <!-- Stats bar -->
       <div class="stats-bar">
         <div class="stat-card">
@@ -192,36 +181,8 @@
         </div>
       </div>
 
-      <div class="settings-section">
-        <div class="settings-section-header">
-          <h3>Monthly Rate of Return</h3>
-          <p>This rate applies to <strong>all</strong> investors. Changing it here takes effect for future interest applications only — past transactions are never altered.</p>
-        </div>
-        <div class="settings-body">
-          <div class="form-group">
-            <label for="setting-monthly-rate">Monthly Rate (%)</label>
-            <input type="number" id="setting-monthly-rate" placeholder="5" min="0" max="100" step="0.1">
-            <p class="form-hint">
-              Example: <strong>5</strong> = 5% per month. A $100 deposit earns $5 the first month,
-              then compounds on $105 the next month, etc.
-            </p>
-          </div>
-        </div>
-      </div>
-
       <div style="margin-bottom:24px">
         <button id="btn-save-settings" class="btn btn-primary" style="width:100%;text-align:center" onclick="saveSettings()">Save Settings</button>
-      </div>
-
-      <div class="settings-section">
-        <div class="settings-section-header">
-          <h3>How Interest Works</h3>
-        </div>
-        <div class="settings-body" style="font-size:0.9rem;color:var(--muted);line-height:1.7">
-          <p>Interest is applied <strong>automatically</strong> on the 1st of each month based on each investor's deposit history. Deposits made mid-month are prorated by day — e.g. a deposit on the 15th of a 30-day month earns 15/30 of that month's interest.</p>
-          <br>
-          <p>Changing the rate here applies to all future calculations. You can delete individual deposits from each investor's transaction history and interest will recalculate instantly.</p>
-        </div>
       </div>
 
     </div>
