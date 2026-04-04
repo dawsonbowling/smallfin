@@ -385,18 +385,31 @@ body {
 
 .investor-row-forecast {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  gap: 14px;
   padding-top: 10px;
 }
 
-.forecast-sentence {
+.forecast-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.forecast-center {
+  flex: 1;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 5px;
   font-size: 0.9rem;
   color: var(--muted);
+  justify-content: center;
+}
+
+.forecast-right {
+  flex-shrink: 0;
 }
 
 .forecast-input-inline {
@@ -425,12 +438,6 @@ body {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--navy);
-}
-
-.forecast-meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
 }
 
 .btn-sm {

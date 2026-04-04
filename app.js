@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.6";
+const VERSION = "2.7";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -618,8 +618,12 @@ function renderDashboard() {
       </div>
       <div class="investor-row-divider"></div>
       <div class="investor-row-forecast">
-        <div class="forecast-sentence">
-          If I invest
+        <div class="forecast-left">
+          <span class="rate-pill">${currentRate}% / mo</span>
+          <button class="btn-icon" onclick="openRateModal('${id}')" title="Change rate" style="font-size:0.85rem">✏</button>
+        </div>
+        <div class="forecast-center">
+          If I invest an additional
           <span class="forecast-input-inline">
             <span class="forecast-input-prefix">$</span><input
               type="number" class="forecast-monthly-input" placeholder="0" min="0" step="1"
@@ -629,10 +633,7 @@ function renderDashboard() {
           </span>
           my EOY forecast is <span class="forecast-amount" id="forecast-${id}">${fmt(forecast)}</span>
         </div>
-        <div class="forecast-meta">
-          <span class="rate-pill">${currentRate}% / mo</span>
-          <button class="btn-icon" onclick="openRateModal('${id}')" title="Change rate" style="font-size:0.85rem">✏</button>
-          <div style="flex:1"></div>
+        <div class="forecast-right">
           <button class="btn btn-ghost btn-sm" onclick="printInvestor('${id}')">🖨 Statement</button>
         </div>
       </div>`;
