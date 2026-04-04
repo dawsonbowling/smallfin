@@ -233,9 +233,9 @@ body {
 }
 
 .nav-brand-icon--logo {
-  background: #fff;
-  border-radius: 12px;
-  padding: 6px 10px;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
 }
 
 .nav-actions { display: flex; align-items: center; gap: 4px; }
@@ -1013,13 +1013,6 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 160px;
-  }
-
-  /* Remove white box behind logo icon on mobile */
-  .nav-brand-icon--logo {
-    background: transparent !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
   }
 
   /* Modal */
