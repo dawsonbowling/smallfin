@@ -495,6 +495,29 @@ function renderNavBrand() {
   if (verEl)  verEl.textContent  = `v${VERSION}`;
 }
 
+// ─── EOY Forecast ──────────────────────────────────────────
+const monthlyDepositInputs = {};
+
+function calcEOYForecast(investorId, monthlyDeposit) {
+  const { balance } = calcBalance(investorId);
+  const inv   = investors[investorId] || {};
+  const rate  = getEffectiveRate(inv.rateHistory, settings.monthlyRate) / 100;
+  const months = 12 - new Date().getMonth();
+  const deposit = parseFloat(monthlyDeposit) || 0;
+  let proj = balance;
+  for (let i = 0; i < months; i++) {
+    proj += deposit;
+    proj *= (1 + rate);
+  }
+  return proj;
+}
+
+function updateForecast(investorId, value) {
+  monthlyDepositInputs[investorId] = parseFloat(value) || 0;
+  const el_ = $(`forecast-${investorId}`);
+  if (el_) el_.textContent = fmt(calcEOYForecast(investorId, monthlyDepositInputs[investorId]));
+}
+
 function renderDashboard() {
   let totalDeposited = 0, totalInterest = 0;
   Object.keys(investors).forEach(id => {
@@ -532,35 +555,52 @@ function renderDashboard() {
     const { deposited, interest, balance } = calcBalance(id);
     const currentRate = getEffectiveRate(inv.rateHistory, settings.monthlyRate);
     const avatar = inv.emoji || inv.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+    const forecast = calcEOYForecast(id, monthlyDepositInputs[id] || 0);
     const row = el("div", "investor-row");
     row.innerHTML = `
-      <div class="investor-row-identity">
-        <div class="investor-avatar" onclick="openAvatarModal('${id}')" title="Change avatar" style="cursor:pointer">${avatar}</div>
-        <span class="investor-name">${escHtml(inv.name)}</span>
-      </div>
-      <div class="investor-row-stats">
-        <div class="investor-stat">
-          <div class="s-label">Deposited</div>
-          <div class="s-value">${fmt(deposited)}</div>
+      <div class="investor-row-main">
+        <div class="investor-row-identity">
+          <div class="investor-avatar" onclick="openAvatarModal('${id}')" title="Change avatar" style="cursor:pointer">${avatar}</div>
+          <span class="investor-name">${escHtml(inv.name)}</span>
         </div>
-        <div class="investor-stat interest">
-          <div class="s-label">Interest</div>
-          <div class="s-value">${fmt(interest)}</div>
+        <div class="investor-row-stats">
+          <div class="investor-stat">
+            <div class="s-label">Deposited</div>
+            <div class="s-value">${fmt(deposited)}</div>
+          </div>
+          <div class="investor-stat interest">
+            <div class="s-label">Interest</div>
+            <div class="s-value">${fmt(interest)}</div>
+          </div>
+          <div class="investor-stat balance">
+            <div class="s-label">Balance</div>
+            <div class="s-value">${fmt(balance)}</div>
+          </div>
         </div>
-        <div class="investor-stat balance">
-          <div class="s-label">Balance</div>
-          <div class="s-value">${fmt(balance)}</div>
+        <div class="investor-row-rate">
+          <span class="rate-pill">${currentRate}% / mo</span>
+          <button class="btn-icon" onclick="openRateModal('${id}')" title="Change rate" style="font-size:0.85rem">✏</button>
+        </div>
+        <div class="investor-row-actions">
+          <button class="btn btn-primary" onclick="openDepositModal('${id}')">+ New Transaction</button>
+          <button class="btn btn-ghost" onclick="printInvestor('${id}')">🖨 Statement</button>
+          <button class="btn-icon" onclick="openTxnModal('${id}')" title="View transactions" style="color:rgba(0,0,0,0.4)">📋</button>
+          <button class="btn-icon" onclick="confirmDeleteInvestor('${id}')" title="Remove investor" style="color:#ef4444">🗑</button>
         </div>
       </div>
-      <div class="investor-row-rate">
-        <span class="rate-pill">${currentRate}% / mo</span>
-        <button class="btn-icon" onclick="openRateModal('${id}')" title="Change rate" style="font-size:0.85rem">✏</button>
-      </div>
-      <div class="investor-row-actions">
-        <button class="btn btn-primary" onclick="openDepositModal('${id}')">+ New Transaction</button>
-        <button class="btn btn-ghost" onclick="printInvestor('${id}')">🖨 Statement</button>
-        <button class="btn-icon" onclick="openTxnModal('${id}')" title="View transactions" style="color:rgba(0,0,0,0.4)">📋</button>
-        <button class="btn-icon" onclick="confirmDeleteInvestor('${id}')" title="Remove investor" style="color:#ef4444">🗑</button>
+      <div class="investor-row-divider"></div>
+      <div class="investor-row-forecast">
+        <div class="forecast-label">
+          <span class="forecast-title">EOY Forecast</span>
+          <span class="forecast-amount" id="forecast-${id}">${fmt(forecast)}</span>
+        </div>
+        <div class="forecast-input">
+          <span class="forecast-input-prefix">+$</span>
+          <input type="number" class="forecast-monthly-input" placeholder="0" min="0" step="1"
+                 value="${monthlyDepositInputs[id] || ''}"
+                 oninput="updateForecast('${id}', this.value)">
+          <span class="forecast-input-suffix">/ mo</span>
+        </div>
       </div>`;
     grid.appendChild(row);
   });
@@ -1006,7 +1046,10 @@ function printInvestor(investorId) {
   const inv    = investors[investorId];
   const txns   = txnsWithRunningBalance(investorId);
   const { deposited, interest, balance } = calcBalance(investorId);
-  const currentRate = getEffectiveRate(inv.rateHistory, settings.monthlyRate);
+  const currentRate    = getEffectiveRate(inv.rateHistory, settings.monthlyRate);
+  const monthlyDeposit = monthlyDepositInputs[investorId] || 0;
+  const eoyForecast    = calcEOYForecast(investorId, monthlyDeposit);
+  const monthsLeft     = 12 - new Date().getMonth();
 
   const serializedTxns = txns.map(t => ({
     ...t,
@@ -1021,7 +1064,10 @@ function printInvestor(investorId) {
     txns:     serializedTxns,
     deposited,
     interest,
-    balance
+    balance,
+    eoyForecast,
+    monthlyDeposit,
+    monthsLeft
   }));
 
   window.location.href = `print.html?id=${investorId}`;

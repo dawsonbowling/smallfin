@@ -366,11 +366,73 @@ body {
   box-shadow: var(--shadow);
   padding: 16px 20px;
   display: flex;
-  align-items: center;
-  gap: 20px;
+  flex-direction: column;
   transition: box-shadow 0.2s;
 }
 .investor-row:hover { box-shadow: var(--shadow-lg); }
+
+.investor-row-main {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.investor-row-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 12px -20px 0;
+}
+
+.investor-row-forecast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  gap: 16px;
+}
+
+.forecast-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.forecast-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.forecast-amount {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.forecast-input {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.forecast-input-prefix { font-weight: 600; }
+
+.forecast-monthly-input {
+  width: 72px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  text-align: right;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+}
+.forecast-monthly-input:focus { border-color: var(--navy-light); }
 
 .investor-row-identity {
   display: flex;
@@ -872,11 +934,13 @@ body {
   .modal { border-radius: 16px; }
   .top-nav { padding: 0 16px; }
   .banks-grid { grid-template-columns: 1fr; }
-  .investor-row { flex-wrap: wrap; gap: 14px; padding: 14px 16px; }
+  .investor-row { padding: 14px 16px; }
+  .investor-row-main { flex-wrap: wrap; gap: 14px; }
   .investor-row-identity { min-width: 0; flex: 1; }
   .investor-row-stats { order: 3; width: 100%; gap: 16px; }
   .investor-row-rate { margin-left: auto; }
   .investor-row-actions { order: 4; width: 100%; justify-content: flex-end; }
+  .investor-row-divider { margin: 12px -16px 0; }
 }
 
 /* ═══════════════════════════════════════════════════════════════

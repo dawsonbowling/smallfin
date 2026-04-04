@@ -100,6 +100,7 @@
     <div>
       <div class="proj-amount" id="proj-amount">—</div>
       <div class="proj-note"><span id="proj-months">—</span> months of growth remaining</div>
+      <div class="proj-note" id="proj-note-extra" style="margin-top:2px"></div>
     </div>
   </div>
 
@@ -135,18 +136,16 @@ const raw = sessionStorage.getItem("sf_print_data");
 if (!raw) {
   $("print-status").textContent = "No data — please open this from the dashboard.";
 } else {
-  const { investor, settings, txns, deposited, interest, balance } = JSON.parse(raw);
+  const { investor, settings, txns, deposited, interest, balance,
+          eoyForecast, monthlyDeposit, monthsLeft: mLeft } = JSON.parse(raw);
 
   const now      = new Date();
   const stmtDate = now.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   const initials = investor.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
   const avatar   = investor.emoji || initials;
 
-  // Projection: months remaining in current year
-  const endOfYear  = new Date(now.getFullYear(), 11, 31);
-  const msPerMonth = 1000 * 60 * 60 * 24 * 30.44;
-  const monthsLeft = Math.max(0, Math.round((endOfYear - now) / msPerMonth));
-  const projected  = balance * Math.pow(1 + (settings.currentRate || settings.monthlyRate) / 100, monthsLeft);
+  const monthsLeft = mLeft ?? (12 - now.getMonth());
+  const projected  = eoyForecast ?? (balance * Math.pow(1 + (settings.currentRate || settings.monthlyRate) / 100, monthsLeft));
 
   document.title = `${investor.name} — Bank Statement`;
 
@@ -166,6 +165,10 @@ if (!raw) {
   set("proj-year",           String(now.getFullYear()));
   set("proj-months",         String(monthsLeft));
   set("proj-amount",         fmt(projected));
+  if (monthlyDeposit) {
+    const noteEl = $("proj-note-extra");
+    if (noteEl) noteEl.textContent = `Includes +${fmt(monthlyDeposit)}/mo additional deposits`;
+  }
 
   const tbody = $("stmt-tbody");
   if (!txns || txns.length === 0) {
