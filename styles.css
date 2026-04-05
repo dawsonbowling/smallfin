@@ -1377,6 +1377,8 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
 }
 
+.stmt-meta-item + .stmt-meta-item { margin-top: 8px; }
+
 .stmt-meta .stmt-label {
   font-size: 0.72rem;
   text-transform: uppercase;

@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.28";
+const VERSION = "2.29";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -1369,7 +1369,7 @@ function printInvestor(investorId) {
   const eoyForecast    = calcEOYForecast(investorId, monthlyDeposit, monthsLeft);
   const forecastChartData = calcForecastMonthByMonth(investorId, monthlyDeposit, monthsLeft);
 
-  const serializedTxns = txns.map(t => ({
+  const serializedTxns = txns.slice(-8).map(t => ({
     ...t,
     date: tsToDate(t.date).toISOString()
   }));

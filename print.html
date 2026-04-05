@@ -31,6 +31,10 @@
         overflow: hidden;
       }
 
+      /* Statement meta: side by side on mobile */
+      .stmt-meta { display: flex; gap: 20px; text-align: left; }
+      .stmt-meta-item + .stmt-meta-item { margin-top: 0; }
+
       /* Investor hero: allow Current Balance to wrap */
       .stmt-investor-hero {
         flex-wrap: wrap;
@@ -39,6 +43,7 @@
       .stmt-balance-hero {
         margin-left: 0;
         width: 100%;
+        text-align: left;
       }
 
       /* Hide TYPE column */
@@ -82,10 +87,14 @@
       </div>
     </div>
     <div class="stmt-meta">
-      <div class="stmt-label">Statement Date</div>
-      <div class="stmt-value" id="stmt-date">—</div>
-      <div class="stmt-label" style="margin-top:8px">Account Type</div>
-      <div class="stmt-value">Compound Growth</div>
+      <div class="stmt-meta-item">
+        <div class="stmt-label">Statement Date</div>
+        <div class="stmt-value" id="stmt-date">—</div>
+      </div>
+      <div class="stmt-meta-item">
+        <div class="stmt-label">Account Type</div>
+        <div class="stmt-value">Compound Growth</div>
+      </div>
     </div>
   </div>
 
