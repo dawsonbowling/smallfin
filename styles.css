@@ -428,7 +428,7 @@ body {
 }
 
 /* ── Mobile rows (hidden on desktop) ── */
-.forecast-mobile { display: none; }
+.forecast-mobile { display: none !important; }
 
 /* ── Mobile: two rows ── */
 .forecast-mid {
@@ -1183,10 +1183,10 @@ body {
   }
   .investor-row-divider { margin: 12px -16px 0; }
   /* On mobile: show mobile rows, hide desktop row */
-  .forecast-desktop-row { display: none; }
-  .forecast-mobile { display: flex; }
+  .forecast-desktop-row { display: none !important; }
+  .forecast-mobile { display: flex !important; }
   .forecast-bot.forecast-mobile {
-    display: block;
+    display: block !important;
     margin-top: 8px;
   }
   .forecast-bot .forecast-input-inline { vertical-align: middle; }
