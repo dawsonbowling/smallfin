@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.21";
+const VERSION = "2.22";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -663,7 +663,7 @@ function renderDashboard() {
     const fMonthly = inv.forecastMonthly ?? 0;
     const fMonths  = inv.forecastMonths  ?? defaultForecastMonths();
     const forecast = calcEOYForecast(id, fMonthly, fMonths);
-    const fSummary = `If I invest an additional <strong>${fmt(fMonthly)}/mo</strong>, in <strong>${fMonths} months</strong> I'll have <strong>${fmt(forecast)}</strong>`;
+    const fSummary = `If I invest <strong>${fmt(fMonthly)}/mo</strong>, in <strong>${fMonths} months</strong> I'll have <strong>${fmt(forecast)}</strong>`;
     const card = el("div", "icard");
     card.innerHTML = `
       <div class="icard-header">
