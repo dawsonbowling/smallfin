@@ -988,6 +988,47 @@ body {
 .settings-danger { border: 1px solid #fecaca; }
 .settings-danger .settings-section-header h3 { color: var(--red); }
 
+.settings-investor-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.settings-investor-row:last-child { border-bottom: none; }
+
+.settings-investor-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-investor-avatar {
+  width: 32px;
+  height: 32px;
+  background: var(--navy);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.settings-investor-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.delete-confirm-warning {
+  font-size: 0.9rem;
+  color: var(--text);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
 /* ─── Emoji Picker ─────────────────────────────────────────── */
 .emoji-picker {
   display: flex;

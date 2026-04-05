@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SmallFin</title>
   <link rel="icon" type="image/png" href="smallfin-favicon.png">
-  <link rel="stylesheet" href="styles.css?v=2.26">
+  <link rel="stylesheet" href="styles.css?v=2.27">
 </head>
 <body>
 
@@ -205,6 +205,14 @@
             <button class="btn btn-ghost" onclick="copyInviteLink()">Copy</button>
           </div>
         </div>
+      </div>
+
+      <div class="settings-section settings-danger">
+        <div class="settings-section-header">
+          <h3>Investor Accounts</h3>
+          <p>Permanently delete an investor and all their transaction history.</p>
+        </div>
+        <div class="settings-body" id="settings-investor-list"></div>
       </div>
 
       <div class="settings-section settings-danger">
@@ -463,6 +471,48 @@
   </div>
 </div>
 
+<!-- ─── Modal: Delete Investor ───────────────────────────── -->
+<div id="modal-delete-investor" class="modal-backdrop hidden">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3>Delete Investor</h3>
+      <button class="btn-icon" onclick="closeDeleteInvestorModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="delete-confirm-warning">This will permanently delete <strong id="delete-investor-name-display"></strong> and all their transaction history. This cannot be undone.</p>
+      <div class="form-group">
+        <label for="delete-investor-confirm-input">Type the investor's name to confirm</label>
+        <input type="text" id="delete-investor-confirm-input" placeholder="" oninput="onDeleteInvestorInput()">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeDeleteInvestorModal()">Cancel</button>
+      <button id="btn-delete-investor-confirm" class="btn btn-danger" onclick="submitDeleteInvestor()" disabled>Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal: Delete Bank ─────────────────────────────────── -->
+<div id="modal-delete-bank" class="modal-backdrop hidden">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3>Delete Bank</h3>
+      <button class="btn-icon" onclick="closeDeleteBankModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="delete-confirm-warning">This will permanently delete <strong id="delete-bank-name-display"></strong> and all investors and transactions. This cannot be undone.</p>
+      <div class="form-group">
+        <label for="delete-bank-confirm-input">Type the bank name to confirm</label>
+        <input type="text" id="delete-bank-confirm-input" placeholder="" oninput="onDeleteBankInput()">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeDeleteBankModal()">Cancel</button>
+      <button id="btn-delete-bank-confirm" class="btn btn-danger" onclick="submitDeleteBank()" disabled>Delete</button>
+    </div>
+  </div>
+</div>
+
 <!-- ─── Modal: Our Story ─────────────────────────────────── -->
 <div id="modal-our-story" class="modal-backdrop hidden">
   <div class="modal modal-prose">
@@ -519,7 +569,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="app.js?v=2.26"></script>
+<script src="app.js?v=2.27"></script>
 
 </body>
 </html>

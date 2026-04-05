@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.26";
+const VERSION = "2.27";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -317,7 +317,7 @@ function renderBanks() {
     const isOwner  = bank.ownerId === currentUser.uid;
     const isShared = (bank.memberIds || []).length > 0;
     card.innerHTML = `
-      <div class="bank-card-logo"><img src="logo-notxt.png" alt="SmallFin" style="width:100%;height:100%;object-fit:contain;padding:10px"></div>
+      <div class="bank-card-logo"><img src="smallfin-pig.png" alt="SmallFin" style="width:100%;height:100%;object-fit:contain;padding:8px"></div>
       <div class="bank-card-name">${escHtml(bank.bankName)}${(!isOwner || isShared) ? ' <span class="bank-shared-badge">Shared</span>' : ''}</div>
       <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="enterBank('${bank.id}')">Enter →</button>`;
     grid.appendChild(card);
@@ -809,11 +809,10 @@ function renderDashboard() {
           <div class="icard-txn-menu hidden" id="txn-menu-${id}">
             <button onclick="openDepositModal('${id}','deposit');closeTxnMenu('${id}')">Deposit</button>
             <button onclick="openDepositModal('${id}','withdrawal');closeTxnMenu('${id}')">Withdrawal</button>
-            <button onclick="openRateModal('${id}');closeTxnMenu('${id}')">Change Interest Rate</button>
           </div>
         </div>
-        <button class="btn-icon" onclick="openTxnModal('${id}')" title="Transaction history" style="color:rgba(0,0,0,0.4)">📋</button>
-        <button class="btn-icon" onclick="printInvestor('${id}')" title="Statement" style="color:rgba(0,0,0,0.4)">🖨️</button>
+        <button class="btn-icon" onclick="openTxnModal('${id}')" title="Transaction history">📋</button>
+        <button class="btn-icon" onclick="printInvestor('${id}')" title="Statement">🖨️</button>
       </div>
       <div class="icard-divider"></div>
       <div class="icard-forecast">
@@ -827,8 +826,34 @@ function renderDashboard() {
 function renderSettings() {
   const nameEl = $("setting-bank-name");
   if (nameEl) nameEl.value = settings.bankName;
-  renderEmojiPicker("bank-logo-picker", BANK_LOGOS, settings.bankLogo || "🏦", "setting-bank-logo");
   renderInviteSection();
+  renderSettingsInvestorList();
+}
+
+function renderSettingsInvestorList() {
+  const listEl = $("settings-investor-list");
+  if (!listEl) return;
+  const ids = Object.keys(investors).sort((a, b) => {
+    const ta = investors[a].createdAt?.toMillis ? investors[a].createdAt.toMillis() : 0;
+    const tb = investors[b].createdAt?.toMillis ? investors[b].createdAt.toMillis() : 0;
+    return ta - tb;
+  });
+  if (ids.length === 0) {
+    listEl.innerHTML = `<p style="color:var(--muted);font-size:0.88rem">No investors yet.</p>`;
+    return;
+  }
+  listEl.innerHTML = ids.map(id => {
+    const inv = investors[id];
+    const avatar = inv.emoji || inv.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+    return `
+      <div class="settings-investor-row">
+        <div class="settings-investor-identity">
+          <span class="settings-investor-avatar">${escHtml(avatar)}</span>
+          <span class="settings-investor-name">${escHtml(inv.name)}</span>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="openDeleteInvestorModal('${id}')">Delete</button>
+      </div>`;
+  }).join("");
 }
 
 async function renderInviteSection() {
@@ -1210,21 +1235,51 @@ async function deleteRateChange(investorId, dateIso) {
 }
 
 // ─── Delete Investor ────────────────────────────────────────
-async function confirmDeleteInvestor(investorId) {
-  const inv = investors[investorId];
-  if (!confirm(`Remove ${inv?.name}?\n\nThis will permanently delete all their transactions. This cannot be undone.`)) return;
+let deleteInvestorId = null;
+
+function openDeleteInvestorModal(investorId) {
+  deleteInvestorId = investorId;
+  const inv = investors[investorId] || {};
+  $("delete-investor-name-display").textContent = inv.name || "";
+  $("delete-investor-confirm-input").value = "";
+  $("delete-investor-confirm-input").placeholder = inv.name || "";
+  $("btn-delete-investor-confirm").disabled = true;
+  show("modal-delete-investor");
+  setTimeout(() => $("delete-investor-confirm-input").focus(), 50);
+}
+
+function closeDeleteInvestorModal() {
+  hide("modal-delete-investor");
+  deleteInvestorId = null;
+}
+
+function onDeleteInvestorInput() {
+  const inv = investors[deleteInvestorId] || {};
+  $("btn-delete-investor-confirm").disabled =
+    $("delete-investor-confirm-input").value !== inv.name;
+}
+
+async function submitDeleteInvestor() {
+  if (!deleteInvestorId) return;
+  const inv = investors[deleteInvestorId];
+  const btn = $("btn-delete-investor-confirm");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Deleting…`;
   try {
     const snap = await txnsRef()
       .where("bankId",     "==", currentBankId)
-      .where("investorId", "==", investorId)
+      .where("investorId", "==", deleteInvestorId)
       .get();
     const batch = db.batch();
     snap.forEach(doc => batch.delete(doc.ref));
-    batch.delete(investorsRef().doc(investorId));
+    batch.delete(investorsRef().doc(deleteInvestorId));
     await batch.commit();
     toast(`${inv?.name} removed.`, "success");
+    closeDeleteInvestorModal();
   } catch (e) {
     toast("Error: " + e.message, "error");
+    btn.disabled = false;
+    btn.textContent = "Delete";
   }
 }
 
@@ -1256,12 +1311,32 @@ async function saveSettings() {
 }
 
 // ─── Delete Bank ───────────────────────────────────────────
-async function confirmDeleteBank() {
+function confirmDeleteBank() {
   if ((settings.memberIds || []).length > 0) {
     toast("Shared banks can't be deleted while members have access.", "error");
     return;
   }
-  if (!confirm(`Permanently delete "${settings.bankName}"?\n\nAll investors and transactions will be deleted. This cannot be undone.`)) return;
+  $("delete-bank-name-display").textContent = settings.bankName;
+  $("delete-bank-confirm-input").value = "";
+  $("delete-bank-confirm-input").placeholder = settings.bankName;
+  $("btn-delete-bank-confirm").disabled = true;
+  show("modal-delete-bank");
+  setTimeout(() => $("delete-bank-confirm-input").focus(), 50);
+}
+
+function closeDeleteBankModal() {
+  hide("modal-delete-bank");
+}
+
+function onDeleteBankInput() {
+  $("btn-delete-bank-confirm").disabled =
+    $("delete-bank-confirm-input").value !== settings.bankName;
+}
+
+async function submitDeleteBank() {
+  const btn = $("btn-delete-bank-confirm");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Deleting…`;
   try {
     const [invSnap, txnSnap] = await Promise.all([
       investorsRef().where("bankId", "==", currentBankId).get(),
@@ -1273,10 +1348,13 @@ async function confirmDeleteBank() {
     batch.delete(bankRef());
     await batch.commit();
     delete banks[currentBankId];
+    closeDeleteBankModal();
     exitBank();
     toast("Bank deleted.", "success");
   } catch (e) {
     toast("Error: " + e.message, "error");
+    btn.disabled = false;
+    btn.textContent = "Delete";
   }
 }
 
