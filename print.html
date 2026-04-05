@@ -3,6 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    // Force desktop-width layout when printing from a mobile device
+    function _setPrintVP()  { var v = document.querySelector('meta[name="viewport"]'); if (v) v.content = 'width=780, initial-scale=1'; }
+    function _resetVP()     { var v = document.querySelector('meta[name="viewport"]'); if (v) v.content = 'width=device-width, initial-scale=1.0'; }
+    window.addEventListener('beforeprint', _setPrintVP);
+    window.addEventListener('afterprint',  _resetVP);
+    if (window.matchMedia) {
+      var _pmq = window.matchMedia('print');
+      _pmq.addEventListener('change', function(e) { e.matches ? _setPrintVP() : _resetVP(); });
+    }
+  </script>
   <title>Bank Statement</title>
   <link rel="icon" type="image/png" href="smallfin-favicon.png">
   <link rel="stylesheet" href="styles.css">

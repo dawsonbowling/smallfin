@@ -1631,6 +1631,8 @@ body {
 }
 
 @media print {
+  html { min-width: 700px; }
+
   .print-controls { display: none !important; }
 
   .print-page {
