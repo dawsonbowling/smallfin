@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.19";
+const VERSION = "2.20";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -217,6 +217,8 @@ function showLogin() {
   hide("app-shell");
   showLoginForm();
   show("view-login");
+  const btn = $("btn-login");
+  if (btn) { btn.disabled = false; btn.textContent = "Sign In"; }
 }
 
 async function showApp() {
