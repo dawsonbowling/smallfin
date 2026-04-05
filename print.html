@@ -11,7 +11,7 @@
     body { background: #e8edf2; }
     @media print { body { background: #fff; } }
 
-    @media (max-width: 600px) {
+    @media screen and (max-width: 600px) {
       body { overflow-x: hidden; }
       .print-page { padding: 20px 16px; }
 
@@ -20,13 +20,6 @@
         flex-direction: column;
         gap: 16px;
         align-items: flex-start;
-      }
-      .stmt-header > div:last-child {
-        flex-direction: row;
-        align-items: center;
-        gap: 16px;
-        width: 100%;
-        justify-content: space-between;
       }
 
       /* Smaller bank name, max 2 lines */
@@ -56,8 +49,9 @@
       .stmt-table { font-size: 0.78rem; }
       .stmt-table th, .stmt-table td { padding: 7px 6px; }
 
-      /* Projection section */
-      .stmt-projection { flex-direction: column; gap: 10px; }
+      /* Projection section: stack on mobile screen */
+      .stmt-projection { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .stmt-projection .proj-amount { text-align: left; }
     }
   </style>
 </head>
@@ -143,8 +137,10 @@
 
   <!-- Projection summary (controlled by forecastStatOnStmt) -->
   <div class="stmt-projection" id="stmt-projection">
-    <div class="proj-title">Projected Balance</div>
-    <div class="proj-note" id="proj-note-extra"></div>
+    <div>
+      <div class="proj-title">Projected Balance</div>
+      <div class="proj-note" id="proj-note-extra"></div>
+    </div>
     <div class="proj-amount" id="proj-amount">—</div>
   </div>
 

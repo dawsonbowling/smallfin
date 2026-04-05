@@ -1555,12 +1555,12 @@ body {
   border-radius: 14px;
   padding: 22px 28px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  text-align: center;
+  justify-content: space-between;
   margin-bottom: 32px;
   font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
-  gap: 6px;
+  gap: 20px;
 }
 
 .stmt-projection .proj-title {
@@ -1572,12 +1572,14 @@ body {
   font-size: 2rem;
   font-weight: 700;
   color: #f0c040;
-  margin-top: 4px;
+  flex-shrink: 0;
+  text-align: right;
 }
 
 .stmt-projection .proj-note {
   font-size: 0.8rem;
   opacity: 0.75;
+  margin-top: 4px;
 }
 
 .stmt-smallfin-logo {
@@ -1711,7 +1713,7 @@ body {
   }
 
   .stmt-projection .proj-title  { font-size: 0.88rem; }
-  .stmt-projection .proj-amount { font-size: 1.5rem; }
+  .stmt-projection .proj-amount { font-size: 1.5rem; text-align: right; }
   .stmt-projection .proj-note   { font-size: 0.7rem; }
 
   .stmt-footer {
