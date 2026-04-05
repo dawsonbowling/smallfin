@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.22";
+const VERSION = "2.23";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -68,8 +68,7 @@ function fmt(n) {
 
 function fmtDate(ts) {
   if (!ts) return "—";
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return tsToDate(ts).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function setInner(id, val) { const e = $(id); if (e) e.textContent = val; }
@@ -78,20 +77,23 @@ function escHtml(s) {
   return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
+// ─── Timestamp normalizer ────────────────────────────────────
+// Handles Firestore Timestamp, plain {seconds,nanoseconds} map,
+// JS Date, or ISO string — all sources seen in real Firestore data.
+function tsToDate(val) {
+  if (!val) return new Date(0);
+  if (typeof val.toDate === "function") return val.toDate();
+  if (typeof val.seconds === "number")  return new Date(val.seconds * 1000);
+  return new Date(val);
+}
+
 // ─── Per-investor rate helpers ───────────────────────────────
 function getEffectiveRate(rateHistory, fallbackRate) {
   if (!rateHistory || rateHistory.length === 0) return fallbackRate;
   const now = new Date();
   const active = rateHistory
-    .filter(r => {
-      const d = r.effectiveDate?.toDate ? r.effectiveDate.toDate() : new Date(r.effectiveDate);
-      return d <= now;
-    })
-    .sort((a, b) => {
-      const da = a.effectiveDate?.toDate ? a.effectiveDate.toDate() : new Date(a.effectiveDate);
-      const db_ = b.effectiveDate?.toDate ? b.effectiveDate.toDate() : new Date(b.effectiveDate);
-      return db_ - da;
-    })[0];
+    .filter(r => tsToDate(r.effectiveDate) <= now)
+    .sort((a, b) => tsToDate(b.effectiveDate) - tsToDate(a.effectiveDate))[0];
   return active !== undefined ? active.rate : fallbackRate;
 }
 
@@ -99,15 +101,8 @@ function getRateForMonth(rateHistory, year, month, fallbackRate) {
   if (!rateHistory || rateHistory.length === 0) return fallbackRate;
   const monthStart = new Date(year, month, 1);
   const active = rateHistory
-    .filter(r => {
-      const d = r.effectiveDate?.toDate ? r.effectiveDate.toDate() : new Date(r.effectiveDate);
-      return d <= monthStart;
-    })
-    .sort((a, b) => {
-      const da = a.effectiveDate?.toDate ? a.effectiveDate.toDate() : new Date(a.effectiveDate);
-      const db_ = b.effectiveDate?.toDate ? b.effectiveDate.toDate() : new Date(b.effectiveDate);
-      return db_ - da;
-    })[0];
+    .filter(r => tsToDate(r.effectiveDate) <= monthStart)
+    .sort((a, b) => tsToDate(b.effectiveDate) - tsToDate(a.effectiveDate))[0];
   return active !== undefined ? active.rate : fallbackRate;
 }
 
@@ -119,12 +114,12 @@ function computeInterestTransactions(txns, rateHistory, fallbackRate) {
   const currentMonth = today.getMonth();
 
   const sorted = txns.slice().sort((a, b) => {
-    const da = a.date?.toDate ? a.date.toDate() : new Date(a.date);
-    const db_ = b.date?.toDate ? b.date.toDate() : new Date(b.date);
+    const da  = tsToDate(a.date);
+    const db_ = tsToDate(b.date);
     return da - db_;
   });
 
-  const firstDate = sorted[0].date?.toDate ? sorted[0].date.toDate() : new Date(sorted[0].date);
+  const firstDate = tsToDate(sorted[0].date);
   let year  = firstDate.getFullYear();
   let month = firstDate.getMonth();
 
@@ -136,13 +131,13 @@ function computeInterestTransactions(txns, rateHistory, fallbackRate) {
     const rate = monthlyRate / 100;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const txnsThisMonth = sorted.filter(d => {
-      const dd = d.date?.toDate ? d.date.toDate() : new Date(d.date);
+      const dd = tsToDate(d.date);
       return dd.getFullYear() === year && dd.getMonth() === month;
     });
 
     let interest = runningBalance * rate;
     txnsThisMonth.forEach(d => {
-      const dd = d.date?.toDate ? d.date.toDate() : new Date(d.date);
+      const dd = tsToDate(d.date);
       const daysEarning = daysInMonth - dd.getDate() + 1;
       const sign = d.type === "withdrawal" ? -1 : 1;
       interest += sign * d.amount * (daysEarning / daysInMonth) * rate;
@@ -184,9 +179,7 @@ function txnsWithRunningBalance(investorId) {
   const inv             = investors[investorId] || {};
   const interestEntries = computeInterestTransactions(txns, inv.rateHistory, settings.monthlyRate);
   const all = [...txns, ...interestEntries].sort((a, b) => {
-    const da = a.date?.toDate ? a.date.toDate() : new Date(a.date);
-    const db_ = b.date?.toDate ? b.date.toDate() : new Date(b.date);
-    return da - db_;
+    return tsToDate(a.date) - tsToDate(b.date);
   });
   let running = 0;
   return all.map(t => {
@@ -893,13 +886,11 @@ function openTxnModal(investorId) {
 
   // Merge rate-change events from rateHistory for display only
   const rateEvents = (inv.rateHistory || []).map(r => {
-    const d = r.effectiveDate?.toDate ? r.effectiveDate.toDate() : new Date(r.effectiveDate);
+    const d = tsToDate(r.effectiveDate);
     return { type: "rate-change", rate: r.rate, date: r.effectiveDate, dateIso: d.toISOString().slice(0, 10), computed: true };
   });
   const all = [...txns, ...rateEvents].sort((a, b) => {
-    const da = a.date?.toDate ? a.date.toDate() : new Date(a.date);
-    const db_ = b.date?.toDate ? b.date.toDate() : new Date(b.date);
-    return da - db_;
+    return tsToDate(a.date) - tsToDate(b.date);
   });
 
   $("txn-modal-title").textContent = `${inv?.name}'s Transactions`;
@@ -1010,9 +1001,7 @@ function closeRateModal() { hide("modal-rate"); rateTargetId = null; }
 function renderRateHistory(investorId) {
   const inv = investors[investorId] || {};
   const history = (inv.rateHistory || []).slice().sort((a, b) => {
-    const da = a.effectiveDate?.toDate ? a.effectiveDate.toDate() : new Date(a.effectiveDate);
-    const db_ = b.effectiveDate?.toDate ? b.effectiveDate.toDate() : new Date(b.effectiveDate);
-    return db_ - da;
+    return tsToDate(b.effectiveDate) - tsToDate(a.effectiveDate);
   });
   const el_ = $("rate-history-list");
   if (!history.length) {
@@ -1023,7 +1012,7 @@ function renderRateHistory(investorId) {
     <div style="margin-top:12px">
       <div style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Rate History</div>
       ${history.map((r, i) => {
-        const d = r.effectiveDate?.toDate ? r.effectiveDate.toDate() : new Date(r.effectiveDate);
+        const d = tsToDate(r.effectiveDate);
         return `<div class="rate-history-item">
           <span class="rate-history-date">${d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
           <span class="rate-history-rate">${r.rate}% / mo</span>
@@ -1049,8 +1038,7 @@ async function submitRateChange() {
     const inv = investors[rateTargetId] || {};
     const existing = inv.rateHistory || [];
     const filtered = existing.filter(r => {
-      const d = r.effectiveDate?.toDate ? r.effectiveDate.toDate() : new Date(r.effectiveDate);
-      return d.toISOString().slice(0, 10) !== dateVal;
+      return tsToDate(r.effectiveDate).toISOString().slice(0, 10) !== dateVal;
     });
     const updated = [...filtered, { rate: rateRaw, effectiveDate }];
     await investorsRef().doc(rateTargetId).update({ rateHistory: updated });
@@ -1070,9 +1058,7 @@ async function deleteRateEntry(index) {
   if (!confirm("Remove this rate entry?")) return;
   const inv = investors[rateTargetId] || {};
   const sorted = (inv.rateHistory || []).slice().sort((a, b) => {
-    const da = a.effectiveDate?.toDate ? a.effectiveDate.toDate() : new Date(a.effectiveDate);
-    const db_ = b.effectiveDate?.toDate ? b.effectiveDate.toDate() : new Date(b.effectiveDate);
-    return db_ - da;
+    return tsToDate(b.effectiveDate) - tsToDate(a.effectiveDate);
   });
   sorted.splice(index, 1);
   try {
@@ -1090,8 +1076,7 @@ async function deleteRateChange(investorId, dateIso) {
   if (!confirm("Remove this rate change? Interest will recalculate automatically.")) return;
   const inv = investors[investorId] || {};
   const updated = (inv.rateHistory || []).filter(r => {
-    const d = r.effectiveDate?.toDate ? r.effectiveDate.toDate() : new Date(r.effectiveDate);
-    return d.toISOString().slice(0, 10) !== dateIso;
+    return tsToDate(r.effectiveDate).toISOString().slice(0, 10) !== dateIso;
   });
   try {
     await investorsRef().doc(investorId).update({ rateHistory: updated });
@@ -1187,7 +1172,7 @@ function printInvestor(investorId) {
 
   const serializedTxns = txns.map(t => ({
     ...t,
-    date: (t.date?.toDate ? t.date.toDate() : new Date(t.date)).toISOString()
+    date: tsToDate(t.date).toISOString()
   }));
 
   sessionStorage.setItem("sf_return_bank", currentBankId);
