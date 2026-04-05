@@ -1723,6 +1723,16 @@ body {
     font-size: 0.68rem;
   }
 
+  #stmt-forecast-chart-section {
+    margin-top: 12px;
+    page-break-inside: avoid;
+  }
+
+  .stmt-chart-wrap {
+    height: 130px !important;
+    margin-top: 6px !important;
+  }
+
   .stmt-investor-hero,
   .stmt-projection { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
