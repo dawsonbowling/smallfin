@@ -353,71 +353,158 @@ body {
 .rate-banner .rate-label { font-size: 0.88rem; opacity: 0.85; }
 .rate-banner .rate-label strong { display: block; font-size: 1rem; opacity: 1; }
 
-/* ─── Investor List (horizontal rows) ─────────────────────── */
+/* ─── Investor Cards Grid ─────────────────────────────────── */
 .investor-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  align-items: start;
 }
 
-.investor-row {
+.investor-list .empty-state { grid-column: 1 / -1; }
+
+/* ─── Investor Card ───────────────────────────────────────── */
+.icard {
   background: var(--card);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 16px 20px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: var(--shadow);
   transition: box-shadow 0.2s;
 }
-.investor-row:hover { box-shadow: var(--shadow-lg); }
+.icard:hover { box-shadow: var(--shadow-lg); }
 
-.investor-row-main {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.investor-row-divider {
-  height: 1px;
+.icard-divider {
+  height: 0.5px;
   background: var(--border);
-  margin: 12px -20px 0;
 }
 
-.investor-row-forecast {
-  padding-top: 10px;
-}
-
-/* ── Desktop: single line ── */
-.forecast-desktop-row {
+/* Section 1: Header */
+.icard-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 14px 16px;
   gap: 12px;
 }
 
-.forecast-left {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.forecast-right {
+.icard-identity {
   display: flex;
   align-items: center;
   gap: 8px;
-  justify-content: flex-end;
   min-width: 0;
 }
 
-.forecast-summary-text {
-  font-size: 0.87rem;
+.icard-edit-btn {
+  font-size: 0.78rem;
+  opacity: 0.45;
+  transition: opacity 0.15s;
+}
+.icard-edit-btn:hover { opacity: 1; }
+
+/* Section 2: Stats */
+.icard-stats {
+  display: flex;
+  padding: 12px 16px;
+}
+
+.icard-stat { flex: 1; }
+
+.icard-stat .s-label {
+  font-size: 0.7rem;
+  font-weight: 600;
   color: var(--muted);
-  text-align: right;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
+
+.icard-stat .s-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.icard-stat.interest .s-value { color: var(--gold-dark); }
+.icard-stat.balance .s-value  { color: var(--green); font-size: 1.05rem; }
+
+/* Section 3: Actions */
+.icard-actions {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  gap: 8px;
+}
+
+.icard-txn-wrap {
+  position: relative;
+  flex: 1;
+}
+
+.icard-txn-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--navy);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.icard-txn-btn:hover { background: var(--navy-light); }
+
+.icard-txn-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  z-index: 100;
+}
+
+.icard-txn-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+  font-family: inherit;
+}
+.icard-txn-menu button:hover { background: var(--bg); }
+
+/* Section 4: Forecast */
+.icard-forecast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #f8fafc;
+  gap: 12px;
+  flex: 1;
+}
+
+.icard-forecast .forecast-summary-text {
+  font-size: 0.84rem;
+  color: var(--muted);
   line-height: 1.4;
 }
 
-.forecast-summary-text strong {
+.icard-forecast .forecast-summary-text strong {
   color: var(--navy);
   font-weight: 600;
 }
@@ -425,65 +512,6 @@ body {
 .forecast-panel-btn {
   font-size: 1.1rem;
   flex-shrink: 0;
-}
-
-/* ── Mobile rows (hidden on desktop) ── */
-.forecast-mobile { display: none !important; }
-
-/* ── Mobile: two rows ── */
-.forecast-mid {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.forecast-bot {
-  text-align: center;
-  font-size: 0.9rem;
-  color: var(--muted);
-  line-height: 1.6;
-}
-
-.forecast-input-inline {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.forecast-input-prefix { font-weight: 600; color: var(--text); }
-.forecast-input-suffix { color: var(--muted); }
-
-.forecast-monthly-input {
-  width: 68px;
-  padding: 3px 7px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 0.88rem;
-  text-align: right;
-  color: var(--text);
-  background: var(--bg);
-  outline: none;
-}
-.forecast-monthly-input:focus { border-color: var(--navy-light); }
-
-.forecast-months-input {
-  width: 46px;
-  padding: 3px 7px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 0.88rem;
-  text-align: right;
-  color: var(--text);
-  background: var(--bg);
-  outline: none;
-}
-.forecast-months-input:focus { border-color: var(--navy-light); }
-
-.forecast-amount {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--navy);
 }
 
 /* ── Forecast Panel modal ── */
@@ -541,61 +569,28 @@ body {
   font-size: 0.82rem;
 }
 
-.investor-row-identity {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 150px;
-}
-
-.investor-row-stats {
-  display: flex;
-  gap: 28px;
-  flex: 1;
-}
-
-.investor-row-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .investor-avatar {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   background: var(--navy);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 20px;
   color: #fff;
   flex-shrink: 0;
+  cursor: pointer;
 }
 
 .investor-name {
   font-size: 1rem;
   font-weight: 700;
   color: var(--navy);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-
-.investor-stat .s-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 2px;
-}
-
-.investor-stat .s-value {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--navy);
-}
-
-.investor-stat.balance .s-value { font-size: 1.1rem; color: var(--green); }
-.investor-stat.interest .s-value { color: var(--gold-dark); }
 
 .rate-pill {
   background: var(--bg);
@@ -1153,43 +1148,9 @@ body {
   }
 }
 
-/* ─── Investor card stacking (applies up to tablet width) ───── */
+/* ─── Investor cards: single column on mobile ───────────────── */
 @media (max-width: 768px) {
-  .investor-row { padding: 14px 16px; }
-  .investor-row-main {
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: flex-start;
-  }
-  /* Identity (avatar + name) always takes its own full-width row */
-  .investor-row-identity {
-    width: 100%;
-    min-width: 0;
-  }
-  /* Stats drop to row 2 */
-  .investor-row-stats { order: 2; width: 100%; gap: 12px; }
-  /* Actions drop to row 3 */
-  .investor-row-actions {
-    order: 3;
-    width: 100%;
-    justify-content: flex-end;
-    gap: 4px;
-    flex-wrap: nowrap;
-  }
-  .investor-row-actions .btn {
-    font-size: 0.8rem;
-    padding: 7px 10px;
-    white-space: nowrap;
-  }
-  .investor-row-divider { margin: 12px -16px 0; }
-  /* On mobile: show mobile rows, hide desktop row */
-  .forecast-desktop-row { display: none !important; }
-  .forecast-mobile { display: flex !important; }
-  .forecast-bot.forecast-mobile {
-    display: block !important;
-    margin-top: 8px;
-  }
-  .forecast-bot .forecast-input-inline { vertical-align: middle; }
+  .investor-list { grid-template-columns: 1fr; }
 }
 
 /* ═══════════════════════════════════════════════════════════════

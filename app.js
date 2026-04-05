@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.17";
+const VERSION = "2.18";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -657,82 +657,57 @@ function renderDashboard() {
     const inv = investors[id];
     const { deposited, interest, balance } = calcBalance(id);
     const currentRate = getEffectiveRate(inv.rateHistory, settings.monthlyRate);
-    const avatar = inv.emoji || inv.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+    const avatar  = inv.emoji || inv.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
     const fMonthly = inv.forecastMonthly ?? 0;
     const fMonths  = inv.forecastMonths  ?? defaultForecastMonths();
     const forecast = calcEOYForecast(id, fMonthly, fMonths);
     const fSummary = fMonthly > 0
-      ? `If I invest an additional <strong>${fmt(fMonthly)}/mo</strong> for <strong>${fMonths} months</strong>, I'll have <strong>${fmt(forecast)}</strong>`
-      : `Over <strong>${fMonths} months</strong>, I'll have <strong>${fmt(forecast)}</strong>`;
-    const row = el("div", "investor-row");
-    row.innerHTML = `
-      <div class="investor-row-main">
-        <div class="investor-row-identity">
-          <div class="investor-avatar" onclick="openAvatarModal('${id}')" title="Change avatar" style="cursor:pointer">${avatar}</div>
+      ? `If I add <strong>${fmt(fMonthly)}/mo</strong> over <strong>${fMonths} months</strong>, I'll have <strong>${fmt(forecast)}</strong>`
+      : `In <strong>${fMonths} months</strong>, I'll have <strong>${fmt(forecast)}</strong>`;
+    const card = el("div", "icard");
+    card.innerHTML = `
+      <div class="icard-header">
+        <div class="icard-identity">
+          <div class="investor-avatar" onclick="openAvatarModal('${id}')">${avatar}</div>
           <span class="investor-name">${escHtml(inv.name)}</span>
+          <button class="btn-icon icard-edit-btn" onclick="openAvatarModal('${id}')" title="Edit">✏</button>
         </div>
-        <div class="investor-row-stats">
-          <div class="investor-stat">
-            <div class="s-label">Deposited</div>
-            <div class="s-value">${fmt(deposited)}</div>
-          </div>
-          <div class="investor-stat interest">
-            <div class="s-label">Interest</div>
-            <div class="s-value">${fmt(interest)}</div>
-          </div>
-          <div class="investor-stat balance">
-            <div class="s-label">Balance</div>
-            <div class="s-value">${fmt(balance)}</div>
-          </div>
+        <span class="rate-pill">${currentRate}% / mo</span>
+      </div>
+      <div class="icard-divider"></div>
+      <div class="icard-stats">
+        <div class="icard-stat">
+          <div class="s-label">Deposited</div>
+          <div class="s-value">${fmt(deposited)}</div>
         </div>
-        <div class="investor-row-actions">
-          <button class="btn btn-primary" onclick="openDepositModal('${id}')">+ New Transaction</button>
-          <button class="btn-icon" onclick="openTxnModal('${id}')" title="View transactions" style="color:rgba(0,0,0,0.4)">📋</button>
-          <button class="btn-icon" onclick="confirmDeleteInvestor('${id}')" title="Remove investor" style="color:#ef4444">🗑</button>
+        <div class="icard-stat interest">
+          <div class="s-label">Interest</div>
+          <div class="s-value">${fmt(interest)}</div>
+        </div>
+        <div class="icard-stat balance">
+          <div class="s-label">Balance</div>
+          <div class="s-value">${fmt(balance)}</div>
         </div>
       </div>
-      <div class="investor-row-divider"></div>
-      <div class="investor-row-forecast">
-        <!-- Desktop single-line row (hidden on mobile) -->
-        <div class="forecast-desktop-row">
-          <div class="forecast-left">
-            <span class="rate-pill">${currentRate}% / mo</span>
-            <button class="btn-icon" onclick="openRateModal('${id}')" title="Change rate" style="font-size:0.85rem">✏</button>
-            <button class="btn btn-ghost btn-sm" onclick="printInvestor('${id}')">🖨 Statement</button>
-          </div>
-          <div class="forecast-right">
-            <span class="forecast-summary-text">${fSummary}</span>
-            <button class="btn-icon forecast-panel-btn" onclick="openForecastPanel('${id}')" title="Edit forecast">📈</button>
+      <div class="icard-divider"></div>
+      <div class="icard-actions">
+        <div class="icard-txn-wrap">
+          <button class="icard-txn-btn" onclick="toggleTxnMenu('${id}')">+ Transaction <span>▾</span></button>
+          <div class="icard-txn-menu hidden" id="txn-menu-${id}">
+            <button onclick="openDepositModal('${id}','deposit');closeTxnMenu('${id}')">Deposit</button>
+            <button onclick="openDepositModal('${id}','withdrawal');closeTxnMenu('${id}')">Withdrawal</button>
+            <button onclick="openRateModal('${id}');closeTxnMenu('${id}')">Change Interest Rate</button>
           </div>
         </div>
-        <!-- Mobile rows (hidden on desktop) -->
-        <div class="forecast-mid forecast-mobile">
-          <div class="forecast-left">
-            <span class="rate-pill">${currentRate}% / mo</span>
-            <button class="btn-icon" onclick="openRateModal('${id}')" title="Change rate" style="font-size:0.85rem">✏</button>
-          </div>
-          <button class="btn btn-ghost btn-sm" onclick="printInvestor('${id}')">🖨 Statement</button>
-        </div>
-        <div class="forecast-bot forecast-mobile">
-          <span class="forecast-input-inline">
-            <span class="forecast-input-prefix">$</span><input
-              type="number" class="forecast-monthly-input" placeholder="0" min="0" step="1"
-              value="${fMonthly || ''}"
-              oninput="updateForecast('${id}', 'monthly', this.value)"
-            >
-          </span>
-          / mo over
-          <span class="forecast-input-inline">
-            <input
-              type="number" class="forecast-months-input" placeholder="${fMonths}" min="1" step="1"
-              value="${inv.forecastMonths != null ? inv.forecastMonths : ''}"
-              oninput="updateForecast('${id}', 'months', this.value)"
-            >
-          </span>
-          months = <span class="forecast-amount" id="forecast-${id}">${fmt(forecast)}</span>
-        </div>
+        <button class="btn-icon" onclick="openTxnModal('${id}')" title="Transaction history" style="color:rgba(0,0,0,0.4)">📋</button>
+        <button class="btn-icon" onclick="printInvestor('${id}')" title="Statement" style="color:rgba(0,0,0,0.4)">🖨️</button>
+      </div>
+      <div class="icard-divider"></div>
+      <div class="icard-forecast">
+        <span class="forecast-summary-text">${fSummary}</span>
+        <button class="btn-icon forecast-panel-btn" onclick="openForecastPanel('${id}')" title="Edit forecast">📊</button>
       </div>`;
-    grid.appendChild(row);
+    grid.appendChild(card);
   });
 }
 
@@ -834,17 +809,35 @@ function setTxnType(type) {
   $("btn-deposit-submit").textContent = type === "deposit" ? "Log Deposit" : "Log Withdrawal";
 }
 
-function openDepositModal(investorId) {
+function openDepositModal(investorId, type = "deposit") {
   depositTargetId = investorId;
   const inv = investors[investorId];
   $("deposit-investor-name").textContent = inv?.name || "Investor";
   $("deposit-amount").value = "";
   $("deposit-note").value   = "";
   populateDatePicker("deposit-date", todayInputValue());
-  setTxnType("deposit");
+  setTxnType(type);
   show("modal-deposit");
   setTimeout(() => $("deposit-amount").focus(), 50);
 }
+
+function toggleTxnMenu(investorId) {
+  const menu = $(`txn-menu-${investorId}`);
+  if (!menu) return;
+  const isOpen = !menu.classList.contains("hidden");
+  document.querySelectorAll(".icard-txn-menu").forEach(m => m.classList.add("hidden"));
+  if (!isOpen) menu.classList.remove("hidden");
+}
+
+function closeTxnMenu(investorId) {
+  $(`txn-menu-${investorId}`)?.classList.add("hidden");
+}
+
+document.addEventListener("click", e => {
+  if (!e.target.closest(".icard-txn-wrap")) {
+    document.querySelectorAll(".icard-txn-menu").forEach(m => m.classList.add("hidden"));
+  }
+});
 
 function closeDepositModal() {
   hide("modal-deposit");
