@@ -3,7 +3,7 @@
 ## What We Built
 SmallFin is a compound interest investment tracker for kids. It lets you track investments, visualize growth over time, and teach kids about the power of compound interest.
 
-## Current State (v2.15)
+## Current State (v2.16)
 - App is fully built and deployed to GitHub Pages
 - Live at: **smallfin.app** (custom domain active)
 - Version number displayed in the nav
@@ -35,8 +35,9 @@ SmallFin is a compound interest investment tracker for kids. It lets you track i
 - ✅ Delete bank in Settings (blocked if bank has members)
 - ✅ Per-investor interest rates with effective dates and full rate change history
 - ✅ Rate changes appear in transaction log (deletable)
-- ✅ EOY forecast row on each investor card: "If I invest an additional $X/mo, my EOY forecast is $X"
-- ✅ Forecast layout: rate pill + edit (left), Statement button (right), sentence centered below
+- ✅ Forecast: desktop bottom row shows rate pill + edit + Statement (left), summary text + 📈 icon (right)
+- ✅ Forecast Panel modal: editable monthly deposit + months, live projected total, saves per investor
+- ✅ Forecast accounts for scheduled future rate changes (rate-aware month-by-month projection)
 - ✅ Our Story and How It Works modals (nav links on desktop, hamburger menu on mobile)
 - ✅ Nav: SmallFin logo on My Banks screen (no white box), bank name inside a bank
 - ✅ Cache-busting via ?v= query string on app.js and styles.css

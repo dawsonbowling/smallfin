@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.15";
+const VERSION = "2.16";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -534,12 +534,16 @@ function defaultForecastMonths() { return 12 - new Date().getMonth(); }
 
 function calcEOYForecast(investorId, monthlyDeposit, months) {
   const { balance } = calcBalance(investorId);
-  const inv   = investors[investorId] || {};
-  const rate  = getEffectiveRate(inv.rateHistory, settings.monthlyRate) / 100;
-  const m     = parseInt(months) || defaultForecastMonths();
+  const inv = investors[investorId] || {};
+  const m = parseInt(months) || defaultForecastMonths();
   const deposit = parseFloat(monthlyDeposit) || 0;
   let proj = balance;
+  const now = new Date();
   for (let i = 0; i < m; i++) {
+    const totalMonths = now.getMonth() + i;
+    const yr = now.getFullYear() + Math.floor(totalMonths / 12);
+    const mo = totalMonths % 12;
+    const rate = getRateForMonth(inv.rateHistory, yr, mo, settings.monthlyRate) / 100;
     proj += deposit;
     proj *= (1 + rate);
   }
@@ -566,6 +570,55 @@ function updateForecast(investorId, field, value) {
   if (el_) el_.textContent = fmt(calcEOYForecast(investorId, inv.forecastMonthly, inv.forecastMonths));
   clearTimeout(forecastSaveTimers[investorId]);
   forecastSaveTimers[investorId] = setTimeout(() => saveForecastSettings(investorId), 800);
+}
+
+// ─── Forecast Panel Modal ───────────────────────────────────
+let forecastPanelId = null;
+
+function openForecastPanel(investorId) {
+  forecastPanelId = investorId;
+  const inv = investors[investorId] || {};
+  $("forecast-modal-name").textContent = inv.name || "";
+  $("forecast-panel-monthly").value = inv.forecastMonthly || "";
+  $("forecast-panel-months").value  = inv.forecastMonths  ?? defaultForecastMonths();
+  updateForecastPanel();
+  show("modal-forecast");
+}
+
+function closeForecastPanel() {
+  hide("modal-forecast");
+  forecastPanelId = null;
+}
+
+function updateForecastPanel() {
+  if (!forecastPanelId) return;
+  const monthly = parseFloat($("forecast-panel-monthly").value) || 0;
+  const months  = parseInt($("forecast-panel-months").value)    || defaultForecastMonths();
+  $("forecast-panel-amount").textContent = fmt(calcEOYForecast(forecastPanelId, monthly, months));
+}
+
+async function saveForecastPanel() {
+  if (!forecastPanelId) return;
+  const inv = investors[forecastPanelId];
+  if (!inv) return;
+  const monthly = parseFloat($("forecast-panel-monthly").value) || 0;
+  const months  = parseInt($("forecast-panel-months").value)    || defaultForecastMonths();
+  inv.forecastMonthly = monthly;
+  inv.forecastMonths  = months;
+  const btn = $("btn-forecast-save");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Saving…`;
+  try {
+    await investorsRef().doc(forecastPanelId).update({ forecastMonthly: monthly, forecastMonths: months });
+    toast("Forecast saved!", "success");
+    closeForecastPanel();
+    renderDashboard();
+  } catch (e) {
+    toast("Error: " + e.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Save";
+  }
 }
 
 function renderDashboard() {
@@ -608,6 +661,9 @@ function renderDashboard() {
     const fMonthly = inv.forecastMonthly ?? 0;
     const fMonths  = inv.forecastMonths  ?? defaultForecastMonths();
     const forecast = calcEOYForecast(id, fMonthly, fMonths);
+    const fSummary = fMonthly > 0
+      ? `If I invest an additional <strong>${fmt(fMonthly)}/mo</strong> for <strong>${fMonths} months</strong>, I'll have <strong>${fmt(forecast)}</strong>`
+      : `Over <strong>${fMonths} months</strong>, I'll have <strong>${fmt(forecast)}</strong>`;
     const row = el("div", "investor-row");
     row.innerHTML = `
       <div class="investor-row-main">
@@ -637,14 +693,27 @@ function renderDashboard() {
       </div>
       <div class="investor-row-divider"></div>
       <div class="investor-row-forecast">
-        <div class="forecast-mid">
+        <!-- Desktop single-line row (hidden on mobile) -->
+        <div class="forecast-desktop-row">
+          <div class="forecast-left">
+            <span class="rate-pill">${currentRate}% / mo</span>
+            <button class="btn-icon" onclick="openRateModal('${id}')" title="Change rate" style="font-size:0.85rem">✏</button>
+            <button class="btn btn-ghost btn-sm" onclick="printInvestor('${id}')">🖨 Statement</button>
+          </div>
+          <div class="forecast-right">
+            <span class="forecast-summary-text">${fSummary}</span>
+            <button class="btn-icon forecast-panel-btn" onclick="openForecastPanel('${id}')" title="Edit forecast">📈</button>
+          </div>
+        </div>
+        <!-- Mobile rows (hidden on desktop) -->
+        <div class="forecast-mid forecast-mobile">
           <div class="forecast-left">
             <span class="rate-pill">${currentRate}% / mo</span>
             <button class="btn-icon" onclick="openRateModal('${id}')" title="Change rate" style="font-size:0.85rem">✏</button>
           </div>
           <button class="btn btn-ghost btn-sm" onclick="printInvestor('${id}')">🖨 Statement</button>
         </div>
-        <div class="forecast-bot">
+        <div class="forecast-bot forecast-mobile">
           <span class="forecast-input-inline">
             <span class="forecast-input-prefix">$</span><input
               type="number" class="forecast-monthly-input" placeholder="0" min="0" step="1"

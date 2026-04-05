@@ -144,12 +144,11 @@
   <div class="stmt-projection" id="stmt-projection">
     <div>
       <div class="proj-label">At <span id="proj-rate">—</span>/mo interest</div>
-      <div class="proj-title" id="proj-title">My EOY forecast — end of <span id="proj-year">—</span></div>
+      <div class="proj-title" id="proj-title">Projected balance</div>
     </div>
     <div>
       <div class="proj-amount" id="proj-amount">—</div>
-      <div class="proj-note"><span id="proj-months">—</span> months of growth remaining</div>
-      <div class="proj-note" id="proj-note-extra" style="margin-top:2px"></div>
+      <div class="proj-note" id="proj-note-extra"></div>
     </div>
   </div>
 
@@ -210,13 +209,15 @@ if (!raw) {
   set("stmt-balance-2",      fmt(balance));
   set("stmt-deposited",      fmt(deposited));
   set("stmt-interest",       fmt(interest));
-  set("proj-rate",           `${settings.currentRate || settings.monthlyRate}%`);
-  set("proj-year",           String(now.getFullYear()));
-  set("proj-months",         String(monthsLeft));
-  set("proj-amount",         fmt(projected));
-  if (monthlyDeposit) {
-    const titleEl = $("proj-title");
-    if (titleEl) titleEl.innerHTML = `${fmt(monthlyDeposit)}/mo over ${monthsLeft} months — my forecast is`;
+  set("proj-rate",    `${settings.currentRate || settings.monthlyRate}%`);
+  set("proj-amount",  fmt(projected));
+  const noteEl = $("proj-note-extra");
+  if (noteEl) {
+    if (monthlyDeposit) {
+      noteEl.textContent = `If ${investor.name} invests an additional ${fmt(monthlyDeposit)}/mo for ${monthsLeft} months`;
+    } else {
+      noteEl.textContent = `Based on current balance over ${monthsLeft} months`;
+    }
   }
 
   const tbody = $("stmt-tbody");

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SmallFin</title>
   <link rel="icon" type="image/png" href="smallfin-favicon.png">
-  <link rel="stylesheet" href="styles.css?v=2.15">
+  <link rel="stylesheet" href="styles.css?v=2.16">
 </head>
 <body>
 
@@ -376,6 +376,38 @@
   </div>
 </div>
 
+<!-- ─── Modal: Forecast Panel ───────────────────────────── -->
+<div id="modal-forecast" class="modal-backdrop hidden">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3>Forecast — <span id="forecast-modal-name"></span></h3>
+      <button class="btn-icon" onclick="closeForecastPanel()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="forecast-panel-monthly">Additional monthly deposit</label>
+        <div class="forecast-panel-input-row">
+          <span class="forecast-panel-prefix">$</span>
+          <input type="number" id="forecast-panel-monthly" placeholder="0" min="0" step="1" oninput="updateForecastPanel()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="forecast-panel-months">Number of months</label>
+        <input type="number" id="forecast-panel-months" placeholder="12" min="1" step="1" oninput="updateForecastPanel()">
+        <p class="form-hint">Defaults to months remaining in the current year.</p>
+      </div>
+      <div class="forecast-panel-result">
+        <div class="forecast-panel-label">Projected total</div>
+        <div class="forecast-panel-amount" id="forecast-panel-amount">—</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeForecastPanel()">Cancel</button>
+      <button id="btn-forecast-save" class="btn btn-primary" onclick="saveForecastPanel()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- ─── Modal: Our Story ─────────────────────────────────── -->
 <div id="modal-our-story" class="modal-backdrop hidden">
   <div class="modal modal-prose">
@@ -429,7 +461,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="app.js?v=2.15"></script>
+<script src="app.js?v=2.16"></script>
 
 </body>
 </html>
