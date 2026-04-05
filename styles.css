@@ -434,6 +434,19 @@ body {
 }
 .forecast-monthly-input:focus { border-color: var(--navy-light); }
 
+.forecast-months-input {
+  width: 46px;
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.88rem;
+  text-align: right;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+}
+.forecast-months-input:focus { border-color: var(--navy-light); }
+
 .forecast-amount {
   font-size: 0.95rem;
   font-weight: 700;

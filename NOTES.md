@@ -3,7 +3,7 @@
 ## What We Built
 SmallFin is a compound interest investment tracker for kids. It lets you track investments, visualize growth over time, and teach kids about the power of compound interest.
 
-## Current State (v2.14)
+## Current State (v2.15)
 - App is fully built and deployed to GitHub Pages
 - Live at: **smallfin.app** (custom domain active)
 - Version number displayed in the nav
@@ -62,4 +62,8 @@ SmallFin is a compound interest investment tracker for kids. It lets you track i
 
 ## Post-MVP Ideas
 - Kid-forward design / DiceBear Avatars
-- Graduation flow (transition to real bank/HYSA)
+
+## MVP Edits
+- Forecasting should be $x/mo over x months equals a forecast of $x. This should be editable and save per investor.
+- Forecasting should have be editable via a forecasting pop up that is signified by up upward graph emoji.
+- Forcesating editor should open a panel with other cool options and expressions of differences in inveseting

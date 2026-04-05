@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.14";
+const VERSION = "2.15";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -528,26 +528,44 @@ function syncMobileMenu() {
 }
 
 // ─── EOY Forecast ──────────────────────────────────────────
-const monthlyDepositInputs = {};
+const forecastSaveTimers = {};
 
-function calcEOYForecast(investorId, monthlyDeposit) {
+function defaultForecastMonths() { return 12 - new Date().getMonth(); }
+
+function calcEOYForecast(investorId, monthlyDeposit, months) {
   const { balance } = calcBalance(investorId);
   const inv   = investors[investorId] || {};
   const rate  = getEffectiveRate(inv.rateHistory, settings.monthlyRate) / 100;
-  const months = 12 - new Date().getMonth();
+  const m     = parseInt(months) || defaultForecastMonths();
   const deposit = parseFloat(monthlyDeposit) || 0;
   let proj = balance;
-  for (let i = 0; i < months; i++) {
+  for (let i = 0; i < m; i++) {
     proj += deposit;
     proj *= (1 + rate);
   }
   return proj;
 }
 
-function updateForecast(investorId, value) {
-  monthlyDepositInputs[investorId] = parseFloat(value) || 0;
+async function saveForecastSettings(investorId) {
+  const inv = investors[investorId];
+  if (!inv) return;
+  try {
+    await investorsRef().doc(investorId).update({
+      forecastMonthly: inv.forecastMonthly ?? 0,
+      forecastMonths:  inv.forecastMonths  ?? defaultForecastMonths()
+    });
+  } catch (e) { console.warn("Forecast save failed", e); }
+}
+
+function updateForecast(investorId, field, value) {
+  const inv = investors[investorId];
+  if (!inv) return;
+  if (field === "monthly") inv.forecastMonthly = parseFloat(value) || 0;
+  if (field === "months")  inv.forecastMonths  = parseInt(value)   || defaultForecastMonths();
   const el_ = $(`forecast-${investorId}`);
-  if (el_) el_.textContent = fmt(calcEOYForecast(investorId, monthlyDepositInputs[investorId]));
+  if (el_) el_.textContent = fmt(calcEOYForecast(investorId, inv.forecastMonthly, inv.forecastMonths));
+  clearTimeout(forecastSaveTimers[investorId]);
+  forecastSaveTimers[investorId] = setTimeout(() => saveForecastSettings(investorId), 800);
 }
 
 function renderDashboard() {
@@ -587,7 +605,9 @@ function renderDashboard() {
     const { deposited, interest, balance } = calcBalance(id);
     const currentRate = getEffectiveRate(inv.rateHistory, settings.monthlyRate);
     const avatar = inv.emoji || inv.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-    const forecast = calcEOYForecast(id, monthlyDepositInputs[id] || 0);
+    const fMonthly = inv.forecastMonthly ?? 0;
+    const fMonths  = inv.forecastMonths  ?? defaultForecastMonths();
+    const forecast = calcEOYForecast(id, fMonthly, fMonths);
     const row = el("div", "investor-row");
     row.innerHTML = `
       <div class="investor-row-main">
@@ -625,15 +645,22 @@ function renderDashboard() {
           <button class="btn btn-ghost btn-sm" onclick="printInvestor('${id}')">🖨 Statement</button>
         </div>
         <div class="forecast-bot">
-          If I invest an additional
           <span class="forecast-input-inline">
             <span class="forecast-input-prefix">$</span><input
               type="number" class="forecast-monthly-input" placeholder="0" min="0" step="1"
-              value="${monthlyDepositInputs[id] || ''}"
-              oninput="updateForecast('${id}', this.value)"
-            ><span class="forecast-input-suffix">/ mo,</span>
-          </span><br>
-          my EOY forecast is <span class="forecast-amount" id="forecast-${id}">${fmt(forecast)}</span>
+              value="${fMonthly || ''}"
+              oninput="updateForecast('${id}', 'monthly', this.value)"
+            >
+          </span>
+          / mo over
+          <span class="forecast-input-inline">
+            <input
+              type="number" class="forecast-months-input" placeholder="${fMonths}" min="1" step="1"
+              value="${inv.forecastMonths != null ? inv.forecastMonths : ''}"
+              oninput="updateForecast('${id}', 'months', this.value)"
+            >
+          </span>
+          months = <span class="forecast-amount" id="forecast-${id}">${fmt(forecast)}</span>
         </div>
       </div>`;
     grid.appendChild(row);
@@ -1081,9 +1108,9 @@ function printInvestor(investorId) {
   const txns   = txnsWithRunningBalance(investorId);
   const { deposited, interest, balance } = calcBalance(investorId);
   const currentRate    = getEffectiveRate(inv.rateHistory, settings.monthlyRate);
-  const monthlyDeposit = monthlyDepositInputs[investorId] || 0;
-  const eoyForecast    = calcEOYForecast(investorId, monthlyDeposit);
-  const monthsLeft     = 12 - new Date().getMonth();
+  const monthlyDeposit = inv.forecastMonthly ?? 0;
+  const monthsLeft     = inv.forecastMonths  ?? defaultForecastMonths();
+  const eoyForecast    = calcEOYForecast(investorId, monthlyDeposit, monthsLeft);
 
   const serializedTxns = txns.map(t => ({
     ...t,

@@ -215,10 +215,8 @@ if (!raw) {
   set("proj-months",         String(monthsLeft));
   set("proj-amount",         fmt(projected));
   if (monthlyDeposit) {
-    const noteEl  = $("proj-note-extra");
     const titleEl = $("proj-title");
-    if (noteEl)  noteEl.textContent  = `Investing an additional ${fmt(monthlyDeposit)}/mo`;
-    if (titleEl) titleEl.innerHTML   = `If I invest an additional ${fmt(monthlyDeposit)}/mo, my EOY forecast — end of <span id="proj-year">${now.getFullYear()}</span> — is`;
+    if (titleEl) titleEl.innerHTML = `${fmt(monthlyDeposit)}/mo over ${monthsLeft} months — my forecast is`;
   }
 
   const tbody = $("stmt-tbody");
