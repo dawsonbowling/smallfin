@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.23";
+const VERSION = "2.24";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -524,6 +524,7 @@ function syncMobileMenu() {
 
 // ─── EOY Forecast ──────────────────────────────────────────
 const forecastSaveTimers = {};
+let forecastChart = null;
 
 function defaultForecastMonths() { return 12 - new Date().getMonth(); }
 
@@ -543,6 +544,30 @@ function calcEOYForecast(investorId, monthlyDeposit, months) {
     proj *= (1 + rate);
   }
   return proj;
+}
+
+// Returns [{label, withDeposit, withoutDeposit}] for chart rendering
+function calcForecastMonthByMonth(investorId, monthlyDeposit, months) {
+  const { balance } = calcBalance(investorId);
+  const inv = investors[investorId] || {};
+  const m = parseInt(months) || defaultForecastMonths();
+  const deposit = parseFloat(monthlyDeposit) || 0;
+  const now = new Date();
+  const points = [];
+  let withDep = balance;
+  let withoutDep = balance;
+  for (let i = 0; i < m; i++) {
+    const totalMonths = now.getMonth() + i;
+    const yr = now.getFullYear() + Math.floor(totalMonths / 12);
+    const mo = totalMonths % 12;
+    const rate = getRateForMonth(inv.rateHistory, yr, mo, settings.monthlyRate) / 100;
+    withDep += deposit;
+    withDep *= (1 + rate);
+    withoutDep *= (1 + rate);
+    const label = new Date(yr, mo).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    points.push({ label, withDeposit: withDep, withoutDeposit: withoutDep });
+  }
+  return points;
 }
 
 async function saveForecastSettings(investorId) {
@@ -576,12 +601,17 @@ function openForecastPanel(investorId) {
   $("forecast-modal-name").textContent = inv.name || "";
   $("forecast-panel-monthly").value = inv.forecastMonthly || "";
   $("forecast-panel-months").value  = inv.forecastMonths  ?? defaultForecastMonths();
+  const statCheck  = $("fp-check-summary");
+  const chartCheck = $("fp-check-chart");
+  if (statCheck)  statCheck.checked  = inv.forecastStatOnStmt  ?? true;
+  if (chartCheck) chartCheck.checked = inv.forecastChartOnStmt ?? true;
   updateForecastPanel();
   show("modal-forecast");
 }
 
 function closeForecastPanel() {
   hide("modal-forecast");
+  if (forecastChart) { forecastChart.destroy(); forecastChart = null; }
   forecastPanelId = null;
 }
 
@@ -589,22 +619,78 @@ function updateForecastPanel() {
   if (!forecastPanelId) return;
   const monthly = parseFloat($("forecast-panel-monthly").value) || 0;
   const months  = parseInt($("forecast-panel-months").value)    || defaultForecastMonths();
-  $("forecast-panel-amount").textContent = fmt(calcEOYForecast(forecastPanelId, monthly, months));
+  const { balance } = calcBalance(forecastPanelId);
+  const projected      = calcEOYForecast(forecastPanelId, monthly, months);
+  const periodDeposited = monthly * months;
+  const periodInterest  = projected - balance - periodDeposited;
+
+  const titleEl = $("forecast-period-title");
+  if (titleEl) titleEl.textContent = `In ${months} month${months !== 1 ? "s" : ""}…`;
+  const depEl = $("fp-total-deposited");
+  const intEl = $("fp-total-interest");
+  const balEl = $("fp-projected-balance");
+  if (depEl) depEl.textContent = fmt(periodDeposited);
+  if (intEl) intEl.textContent = fmt(periodInterest);
+  if (balEl) balEl.textContent = fmt(projected);
+
+  // Build chart
+  const points   = calcForecastMonthByMonth(forecastPanelId, monthly, months);
+  const labels   = points.map(p => p.label);
+  const withDep  = points.map(p => p.withDeposit);
+  const noDep    = points.map(p => p.withoutDeposit);
+  const sparse   = points.length > 24;
+  const datasets = monthly > 0
+    ? [
+        { label: "With deposits",    data: withDep, borderColor: "#22c55e", backgroundColor: "rgba(34,197,94,0.08)",  tension: 0.3, fill: true,  pointRadius: sparse ? 0 : 3 },
+        { label: "Without deposits", data: noDep,   borderColor: "#1e3260", backgroundColor: "rgba(30,50,96,0.04)",   tension: 0.3, fill: false, pointRadius: sparse ? 0 : 3, borderDash: [4,3] }
+      ]
+    : [
+        { label: "Projected balance", data: withDep, borderColor: "#1e3260", backgroundColor: "rgba(30,50,96,0.08)", tension: 0.3, fill: true, pointRadius: sparse ? 0 : 3 }
+      ];
+
+  const canvas = $("forecast-chart");
+  if (!canvas) return;
+  if (forecastChart) { forecastChart.destroy(); forecastChart = null; }
+  forecastChart = new Chart(canvas, {
+    type: "line",
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: monthly > 0, labels: { font: { size: 11 }, boxWidth: 20 } },
+        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` } }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 12 } },
+        y: { ticks: { font: { size: 10 }, callback: v => "$" + (v >= 1000 ? (v/1000).toFixed(1)+"k" : v.toFixed(0)) } }
+      }
+    }
+  });
 }
 
 async function saveForecastPanel() {
   if (!forecastPanelId) return;
   const inv = investors[forecastPanelId];
   if (!inv) return;
-  const monthly = parseFloat($("forecast-panel-monthly").value) || 0;
-  const months  = parseInt($("forecast-panel-months").value)    || defaultForecastMonths();
-  inv.forecastMonthly = monthly;
-  inv.forecastMonths  = months;
+  const monthly       = parseFloat($("forecast-panel-monthly").value) || 0;
+  const months        = parseInt($("forecast-panel-months").value)    || defaultForecastMonths();
+  const statOnStmt    = $("fp-check-summary")?.checked ?? true;
+  const chartOnStmt   = $("fp-check-chart")?.checked   ?? true;
+  inv.forecastMonthly     = monthly;
+  inv.forecastMonths      = months;
+  inv.forecastStatOnStmt  = statOnStmt;
+  inv.forecastChartOnStmt = chartOnStmt;
   const btn = $("btn-forecast-save");
   btn.disabled = true;
   btn.innerHTML = `<span class="spinner"></span> Saving…`;
   try {
-    await investorsRef().doc(forecastPanelId).update({ forecastMonthly: monthly, forecastMonths: months });
+    await investorsRef().doc(forecastPanelId).update({
+      forecastMonthly:     monthly,
+      forecastMonths:      months,
+      forecastStatOnStmt:  statOnStmt,
+      forecastChartOnStmt: chartOnStmt
+    });
     toast("Forecast saved!", "success");
     closeForecastPanel();
     renderDashboard();
@@ -1166,9 +1252,10 @@ function printInvestor(investorId) {
   const txns   = txnsWithRunningBalance(investorId);
   const { deposited, interest, balance } = calcBalance(investorId);
   const currentRate    = getEffectiveRate(inv.rateHistory, settings.monthlyRate);
-  const monthlyDeposit = inv.forecastMonthly ?? 0;
-  const monthsLeft     = inv.forecastMonths  ?? defaultForecastMonths();
+  const monthlyDeposit = inv.forecastMonthly   ?? 0;
+  const monthsLeft     = inv.forecastMonths    ?? defaultForecastMonths();
   const eoyForecast    = calcEOYForecast(investorId, monthlyDeposit, monthsLeft);
+  const forecastChartData = calcForecastMonthByMonth(investorId, monthlyDeposit, monthsLeft);
 
   const serializedTxns = txns.map(t => ({
     ...t,
@@ -1186,7 +1273,10 @@ function printInvestor(investorId) {
     balance,
     eoyForecast,
     monthlyDeposit,
-    monthsLeft
+    monthsLeft,
+    forecastStatOnStmt:  inv.forecastStatOnStmt  ?? true,
+    forecastChartOnStmt: inv.forecastChartOnStmt ?? true,
+    forecastChartData
   }));
 
   window.location.href = `print.html?id=${investorId}`;

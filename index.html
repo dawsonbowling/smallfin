@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SmallFin</title>
   <link rel="icon" type="image/png" href="smallfin-favicon.png">
-  <link rel="stylesheet" href="styles.css?v=2.23">
+  <link rel="stylesheet" href="styles.css?v=2.24">
 </head>
 <body>
 
@@ -378,28 +378,72 @@
 
 <!-- ─── Modal: Forecast Panel ───────────────────────────── -->
 <div id="modal-forecast" class="modal-backdrop hidden">
-  <div class="modal" style="max-width:400px">
+  <div class="modal forecast-modal">
     <div class="modal-header">
       <h3>Forecast — <span id="forecast-modal-name"></span></h3>
       <button class="btn-icon" onclick="closeForecastPanel()">✕</button>
     </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label for="forecast-panel-monthly">Additional monthly deposit</label>
-        <div class="forecast-panel-input-row">
-          <span class="forecast-panel-prefix">$</span>
-          <input type="number" id="forecast-panel-monthly" placeholder="0" min="0" step="1" oninput="updateForecastPanel()">
+    <div class="modal-body forecast-modal-body">
+
+      <!-- Section 1: Inputs -->
+      <div class="forecast-section">
+        <div class="form-group" style="margin-bottom:14px">
+          <label for="forecast-panel-monthly">Additional monthly deposit</label>
+          <div class="forecast-panel-input-row">
+            <span class="forecast-panel-prefix">$</span>
+            <input type="number" id="forecast-panel-monthly" placeholder="0" min="0" step="1" oninput="updateForecastPanel()">
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <div class="forecast-months-row">
+            <span>Over the next</span>
+            <input type="number" id="forecast-panel-months" class="forecast-months-inline" placeholder="12" min="1" step="1" oninput="updateForecastPanel()">
+            <span>months</span>
+          </div>
+          <p class="form-hint" style="margin-top:6px">Defaults to months remaining in the current year.</p>
         </div>
       </div>
-      <div class="form-group">
-        <label for="forecast-panel-months">Number of months</label>
-        <input type="number" id="forecast-panel-months" placeholder="12" min="1" step="1" oninput="updateForecastPanel()">
-        <p class="form-hint">Defaults to months remaining in the current year.</p>
+
+      <!-- Section 2: Projected summary -->
+      <div class="forecast-section">
+        <div class="forecast-section-title" id="forecast-period-title">In — months…</div>
+        <div class="forecast-stat-cards">
+          <div class="forecast-stat-card">
+            <div class="forecast-stat-label">Total deposited</div>
+            <div class="forecast-stat-value" id="fp-total-deposited">—</div>
+          </div>
+          <div class="forecast-stat-card">
+            <div class="forecast-stat-label">Interest earned</div>
+            <div class="forecast-stat-value gold" id="fp-total-interest">—</div>
+          </div>
+          <div class="forecast-stat-card">
+            <div class="forecast-stat-label">Projected balance</div>
+            <div class="forecast-stat-value green" id="fp-projected-balance">—</div>
+          </div>
+        </div>
       </div>
-      <div class="forecast-panel-result">
-        <div class="forecast-panel-label">Projected total</div>
-        <div class="forecast-panel-amount" id="forecast-panel-amount">—</div>
+
+      <!-- Section 3: Month by month chart -->
+      <div class="forecast-section">
+        <div class="forecast-section-title">Month by Month</div>
+        <div class="forecast-chart-container">
+          <canvas id="forecast-chart"></canvas>
+        </div>
       </div>
+
+      <!-- Section 4: Statement checkboxes -->
+      <div class="forecast-section">
+        <div class="forecast-section-title">Statement Options</div>
+        <label class="forecast-checkbox-row">
+          <input type="checkbox" id="fp-check-summary" checked>
+          Include projected balance summary on statement
+        </label>
+        <label class="forecast-checkbox-row">
+          <input type="checkbox" id="fp-check-chart" checked>
+          Include month by month chart on statement
+        </label>
+      </div>
+
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeForecastPanel()">Cancel</button>
@@ -456,12 +500,15 @@
 <!-- ─── Toast container ──────────────────────────────────── -->
 <div id="toast-container"></div>
 
+<!-- ─── Chart.js ─────────────────────────────────────────── -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
 <!-- ─── Firebase (compat CDN) ────────────────────────────── -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="app.js?v=2.23"></script>
+<script src="app.js?v=2.24"></script>
 
 </body>
 </html>

@@ -6,6 +6,7 @@
   <title>Bank Statement</title>
   <link rel="icon" type="image/png" href="smallfin-favicon.png">
   <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <style>
     body { background: #e8edf2; }
     @media print { body { background: #fff; } }
@@ -140,7 +141,7 @@
     </tbody>
   </table>
 
-  <!-- Projection -->
+  <!-- Projection summary (controlled by forecastStatOnStmt) -->
   <div class="stmt-projection" id="stmt-projection">
     <div>
       <div class="proj-label">At <span id="proj-rate">—</span>/mo interest</div>
@@ -149,6 +150,14 @@
     <div>
       <div class="proj-amount" id="proj-amount">—</div>
       <div class="proj-note" id="proj-note-extra"></div>
+    </div>
+  </div>
+
+  <!-- Month by month chart (controlled by forecastChartOnStmt) -->
+  <div id="stmt-forecast-chart-section" style="display:none;margin-top:28px">
+    <div class="stmt-section-title">Month by Month Forecast</div>
+    <div style="position:relative;height:260px;margin-top:12px">
+      <canvas id="stmt-forecast-chart"></canvas>
     </div>
   </div>
 
@@ -185,7 +194,8 @@ if (!raw) {
   $("print-status").textContent = "No data — please open this from the dashboard.";
 } else {
   const { investor, settings, txns, deposited, interest, balance,
-          eoyForecast, monthlyDeposit, monthsLeft: mLeft } = JSON.parse(raw);
+          eoyForecast, monthlyDeposit, monthsLeft: mLeft,
+          forecastStatOnStmt, forecastChartOnStmt, forecastChartData } = JSON.parse(raw);
 
   const now      = new Date();
   const stmtDate = now.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
@@ -214,11 +224,15 @@ if (!raw) {
   const noteEl = $("proj-note-extra");
   if (noteEl) {
     if (monthlyDeposit) {
-      noteEl.textContent = `If ${investor.name} invests an additional ${fmt(monthlyDeposit)}/mo for ${monthsLeft} months`;
+      noteEl.textContent = `If ${investor.name} invests ${fmt(monthlyDeposit)}/mo for ${monthsLeft} months`;
     } else {
       noteEl.textContent = `Based on current balance over ${monthsLeft} months`;
     }
   }
+
+  // Show/hide projection summary based on checkbox setting
+  const projEl = $("stmt-projection");
+  if (projEl) projEl.style.display = (forecastStatOnStmt === false) ? "none" : "";
 
   const tbody = $("stmt-tbody");
   if (!txns || txns.length === 0) {
@@ -237,6 +251,43 @@ if (!raw) {
         <td class="running-balance">${fmt(t.runningBalance)}</td>
       </tr>`;
     }).join("");
+  }
+
+  // Render chart if enabled and data is available
+  if (forecastChartOnStmt !== false && forecastChartData && forecastChartData.length > 0) {
+    const chartSection = $("stmt-forecast-chart-section");
+    if (chartSection) chartSection.style.display = "";
+    const canvas = $("stmt-forecast-chart");
+    if (canvas && typeof Chart !== "undefined") {
+      const labels  = forecastChartData.map(p => p.label);
+      const withDep = forecastChartData.map(p => p.withDeposit);
+      const noDep   = forecastChartData.map(p => p.withoutDeposit);
+      const sparse  = forecastChartData.length > 24;
+      const datasets = monthlyDeposit > 0
+        ? [
+            { label: "With deposits",    data: withDep, borderColor: "#22c55e", backgroundColor: "rgba(34,197,94,0.08)",  tension: 0.3, fill: true,  pointRadius: sparse ? 0 : 3 },
+            { label: "Without deposits", data: noDep,   borderColor: "#1e3260", backgroundColor: "rgba(30,50,96,0.04)",   tension: 0.3, fill: false, pointRadius: sparse ? 0 : 3, borderDash: [4,3] }
+          ]
+        : [
+            { label: "Projected balance", data: withDep, borderColor: "#1e3260", backgroundColor: "rgba(30,50,96,0.08)", tension: 0.3, fill: true, pointRadius: sparse ? 0 : 3 }
+          ];
+      new Chart(canvas, {
+        type: "line",
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: monthlyDeposit > 0, labels: { font: { size: 11 }, boxWidth: 20 } },
+            tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` } }
+          },
+          scales: {
+            x: { ticks: { font: { size: 10 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 12 } },
+            y: { ticks: { font: { size: 10 }, callback: v => "$" + (v >= 1000 ? (v/1000).toFixed(1)+"k" : v.toFixed(0)) } }
+          }
+        }
+      });
+    }
   }
 }
 </script>
