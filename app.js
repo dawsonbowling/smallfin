@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.18";
+const VERSION = "2.19";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -662,7 +662,7 @@ function renderDashboard() {
     const fMonths  = inv.forecastMonths  ?? defaultForecastMonths();
     const forecast = calcEOYForecast(id, fMonthly, fMonths);
     const fSummary = fMonthly > 0
-      ? `If I add <strong>${fmt(fMonthly)}/mo</strong> over <strong>${fMonths} months</strong>, I'll have <strong>${fmt(forecast)}</strong>`
+      ? `If I invest an additional <strong>${fmt(fMonthly)}/mo</strong>, in <strong>${fMonths} months</strong> I'll have <strong>${fmt(forecast)}</strong>`
       : `In <strong>${fMonths} months</strong>, I'll have <strong>${fmt(forecast)}</strong>`;
     const card = el("div", "icard");
     card.innerHTML = `
@@ -826,7 +826,14 @@ function toggleTxnMenu(investorId) {
   if (!menu) return;
   const isOpen = !menu.classList.contains("hidden");
   document.querySelectorAll(".icard-txn-menu").forEach(m => m.classList.add("hidden"));
-  if (!isOpen) menu.classList.remove("hidden");
+  if (!isOpen) {
+    const btn = menu.previousElementSibling;
+    const rect = btn.getBoundingClientRect();
+    menu.style.top   = (rect.bottom + 4) + "px";
+    menu.style.left  = rect.left + "px";
+    menu.style.width = rect.width + "px";
+    menu.classList.remove("hidden");
+  }
 }
 
 function closeTxnMenu(investorId) {
@@ -838,6 +845,10 @@ document.addEventListener("click", e => {
     document.querySelectorAll(".icard-txn-menu").forEach(m => m.classList.add("hidden"));
   }
 });
+
+window.addEventListener("scroll", () => {
+  document.querySelectorAll(".icard-txn-menu").forEach(m => m.classList.add("hidden"));
+}, { passive: true });
 
 function closeDepositModal() {
   hide("modal-deposit");

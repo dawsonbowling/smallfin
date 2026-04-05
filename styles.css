@@ -368,7 +368,6 @@ body {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow);
@@ -388,6 +387,7 @@ body {
   justify-content: space-between;
   padding: 14px 16px;
   gap: 12px;
+  border-radius: var(--radius) var(--radius) 0 0;
 }
 
 .icard-identity {
@@ -461,16 +461,13 @@ body {
 .icard-txn-btn:hover { background: var(--navy-light); }
 
 .icard-txn-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
+  position: fixed;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: var(--shadow-lg);
   overflow: hidden;
-  z-index: 100;
+  z-index: 500;
 }
 
 .icard-txn-menu button {
@@ -496,6 +493,7 @@ body {
   background: #f8fafc;
   gap: 12px;
   flex: 1;
+  border-radius: 0 0 var(--radius) var(--radius);
 }
 
 .icard-forecast .forecast-summary-text {
