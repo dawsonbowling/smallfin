@@ -1514,17 +1514,12 @@ body {
   border-radius: 14px;
   padding: 22px 28px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  text-align: center;
   margin-bottom: 32px;
   font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.stmt-projection .proj-label {
-  font-size: 0.88rem;
-  opacity: 0.8;
+  gap: 6px;
 }
 
 .stmt-projection .proj-title {
@@ -1533,17 +1528,22 @@ body {
 }
 
 .stmt-projection .proj-amount {
-  font-size: 1.8rem;
+  font-size: 2rem;
   font-weight: 700;
   color: #f0c040;
-  text-align: right;
+  margin-top: 4px;
 }
 
 .stmt-projection .proj-note {
-  font-size: 0.75rem;
-  opacity: 0.65;
-  text-align: right;
-  margin-top: 2px;
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.stmt-smallfin-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 /* Footer */
@@ -1669,10 +1669,9 @@ body {
     border-radius: 10px;
   }
 
-  .stmt-projection .proj-label  { font-size: 0.75rem; }
   .stmt-projection .proj-title  { font-size: 0.88rem; }
-  .stmt-projection .proj-amount { font-size: 1.3rem; }
-  .stmt-projection .proj-note   { font-size: 0.68rem; }
+  .stmt-projection .proj-amount { font-size: 1.5rem; }
+  .stmt-projection .proj-note   { font-size: 0.7rem; }
 
   .stmt-footer {
     padding-top: 10px;

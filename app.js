@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.25";
+const VERSION = "2.26";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -317,7 +317,7 @@ function renderBanks() {
     const isOwner  = bank.ownerId === currentUser.uid;
     const isShared = (bank.memberIds || []).length > 0;
     card.innerHTML = `
-      <div class="bank-card-logo">${bank.bankLogo || "🏦"}</div>
+      <div class="bank-card-logo"><img src="logo-notxt.png" alt="SmallFin" style="width:100%;height:100%;object-fit:contain;padding:10px"></div>
       <div class="bank-card-name">${escHtml(bank.bankName)}${(!isOwner || isShared) ? ' <span class="bank-shared-badge">Shared</span>' : ''}</div>
       <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="enterBank('${bank.id}')">Enter →</button>`;
     grid.appendChild(card);
@@ -481,10 +481,8 @@ function renderNavBrand() {
   if (textEl)     show("nav-brand-text");
   if (subtitleEl) toggle("nav-by-smallfin", !!currentBankId);
   if (iconEl) {
-    iconEl.innerHTML = currentBankId
-      ? (settings.bankLogo || "🏦")
-      : `<img src="logo-notxt.png" alt="SmallFin" style="height:44px;width:auto;display:block">`;
-    iconEl.classList.toggle("nav-brand-icon--logo", !currentBankId);
+    iconEl.innerHTML = `<img src="logo-notxt.png" alt="SmallFin" style="height:44px;width:auto;display:block">`;
+    iconEl.classList.add("nav-brand-icon--logo");
   }
   if (verEl)  verEl.textContent  = `v${VERSION}`;
   syncMobileMenu();
