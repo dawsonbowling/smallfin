@@ -397,12 +397,10 @@ body {
   min-width: 0;
 }
 
-.icard-edit-btn {
-  font-size: 0.78rem;
-  opacity: 0.45;
-  transition: opacity 0.15s;
+.icard-name-btn {
+  cursor: pointer;
 }
-.icard-edit-btn:hover { opacity: 1; }
+.icard-name-btn:hover { text-decoration: underline; text-decoration-style: dotted; }
 
 /* Section 2: Stats */
 .icard-stats {
@@ -706,6 +704,25 @@ body {
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--navy);
+}
+
+.rate-pill-btn {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--navy);
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.rate-pill-btn:hover {
+  background: #e2eaf5;
+  border-color: var(--navy-light);
 }
 
 /* ─── Rate History (in modal) ──────────────────────────────── */

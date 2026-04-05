@@ -3,7 +3,7 @@
    Vanilla JS + Firebase (compat SDK via CDN)
 ───────────────────────────────────────────────────────────── */
 
-const VERSION = "2.24";
+const VERSION = "2.25";
 
 // ─── Firebase init ─────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -702,6 +702,43 @@ async function saveForecastPanel() {
   }
 }
 
+// ─── Rename Investor ───────────────────────────────────────
+let renameInvestorId = null;
+
+function openRenameModal(investorId) {
+  renameInvestorId = investorId;
+  const inv = investors[investorId] || {};
+  $("rename-investor-input").value = inv.name || "";
+  show("modal-rename");
+  setTimeout(() => $("rename-investor-input").select(), 50);
+}
+
+function closeRenameModal() {
+  hide("modal-rename");
+  renameInvestorId = null;
+}
+
+async function submitRename() {
+  if (!renameInvestorId) return;
+  const name = $("rename-investor-input").value.trim();
+  if (!name) return;
+  const btn = $("btn-rename-submit");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Saving…`;
+  try {
+    await investorsRef().doc(renameInvestorId).update({ name });
+    investors[renameInvestorId].name = name;
+    toast("Name updated!", "success");
+    closeRenameModal();
+    renderDashboard();
+  } catch (e) {
+    toast("Error: " + e.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Save";
+  }
+}
+
 function renderDashboard() {
   let totalDeposited = 0, totalInterest = 0;
   Object.keys(investors).forEach(id => {
@@ -748,10 +785,9 @@ function renderDashboard() {
       <div class="icard-header">
         <div class="icard-identity">
           <div class="investor-avatar" onclick="openAvatarModal('${id}')">${avatar}</div>
-          <span class="investor-name">${escHtml(inv.name)}</span>
-          <button class="btn-icon icard-edit-btn" onclick="openAvatarModal('${id}')" title="Edit">✏</button>
+          <span class="investor-name icard-name-btn" onclick="openRenameModal('${id}')">${escHtml(inv.name)}</span>
         </div>
-        <span class="rate-pill">${currentRate}% / mo</span>
+        <button class="rate-pill-btn" onclick="openRateModal('${id}')" title="Change interest rate">📈 ${currentRate}% / mo</button>
       </div>
       <div class="icard-divider"></div>
       <div class="icard-stats">

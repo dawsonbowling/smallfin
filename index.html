@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SmallFin</title>
   <link rel="icon" type="image/png" href="smallfin-favicon.png">
-  <link rel="stylesheet" href="styles.css?v=2.24">
+  <link rel="stylesheet" href="styles.css?v=2.25">
 </head>
 <body>
 
@@ -376,6 +376,27 @@
   </div>
 </div>
 
+<!-- ─── Modal: Rename Investor ───────────────────────────── -->
+<div id="modal-rename" class="modal-backdrop hidden">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <h3>Rename Investor</h3>
+      <button class="btn-icon" onclick="closeRenameModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="rename-investor-input">Name</label>
+        <input type="text" id="rename-investor-input" placeholder="e.g. Lily" maxlength="60"
+               onkeydown="if(event.key==='Enter') submitRename()">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeRenameModal()">Cancel</button>
+      <button id="btn-rename-submit" class="btn btn-primary" onclick="submitRename()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- ─── Modal: Forecast Panel ───────────────────────────── -->
 <div id="modal-forecast" class="modal-backdrop hidden">
   <div class="modal forecast-modal">
@@ -508,7 +529,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="app.js?v=2.24"></script>
+<script src="app.js?v=2.25"></script>
 
 </body>
 </html>
